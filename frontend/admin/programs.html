@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programs & Courses | FORESTRY TRAINING INSTITUTE OLMOTONYI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --forest-primary: #2d5016;
+            --forest-secondary: #8b4513;
+            --forest-accent: #ffa500;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: var(--forest-primary);
+            color: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin: 0.25rem 0.5rem;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.15);
+        }
+        .topbar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 2rem;
+        }
+        .university-brand {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--forest-primary);
+        }
+        .program-card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 px-0 sidebar">
+                <div class="p-3 text-center border-bottom border-secondary">
+                    <h4><img src="/static/images/logo.png" height="28" alt="" style="vertical-align: middle;"> FORESTRY INST.</h4>
+                    <small class="text-muted">Olmotonyi Campus</small>
+                </div>
+                <nav class="nav flex-column p-3">
+                    <a class="nav-link" href="/admin/dashboard.html">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a class="nav-link" href="/admin/users.html">
+                        <i class="fas fa-users me-2"></i> User Management
+                    </a>
+                    <a class="nav-link active" href="/admin/programs.html">
+                        <i class="fas fa-graduation-cap me-2"></i> Programs & Courses
+                    </a>
+                    <a class="nav-link" href="/admin/audit-logs.html">
+                        <i class="fas fa-clipboard-list me-2"></i> Audit Logs
+                    </a>
+                    <a class="nav-link" href="#" onclick="logout()">
+                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <!-- Topbar -->
+                <div class="topbar d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0">Programs & Courses Management</h4>
+                        <small class="text-muted">Manage academic programs and courses</small>
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    <!-- Programs Section -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3>Programs</h3>
+                        <button class="btn btn-primary" onclick="showAddProgram()">
+                            <i class="fas fa-plus me-2"></i> Add Program
+                        </button>
+                    </div>
+                    <div class="row" id="programsList"></div>
+
+                    <hr class="my-5">
+
+                    <!-- Courses Section -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3>Courses</h3>
+                        <button class="btn btn-success" onclick="showAddCourse()">
+                            <i class="fas fa-plus me-2"></i> Add Course
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="coursesTable">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Title</th>
+                                    <th>Program</th>
+                                    <th>Credits</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coursesBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/admin/login.html';
+
+        let programs = [];
+        let courses = [];
+
+        async function loadData() {
+            await loadPrograms();
+            await loadCourses();
+        }
+
+        async function loadPrograms() {
+            const response = await fetch('/api/admin/programs', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                programs = await response.json();
+                document.getElementById('programsList').innerHTML = programs.map(p => `
+                    <div class="col-md-4 mb-3">
+                        <div class="card program-card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">${p.name}</h5>
+                                <p class="text-muted small">${p.code}</p>
+                                <p>${p.department}</p>
+                                <p><small>Duration: ${p.duration_months} months</small></p>
+                                <button class="btn btn-sm btn-warning" onclick="editProgram(${p.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteProgram(${p.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function loadCourses() {
+            const response = await fetch('/api/admin/courses', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                courses = await response.json();
+                const tbody = document.getElementById('coursesBody');
+                tbody.innerHTML = courses.map(c => `
+                    <tr>
+                        <td>${c.code}</td>
+                        <td>${c.title}</td>
+                        <td>${programs.find(p => p.id === c.program_id)?.name || 'N/A'}</td>
+                        <td>${c.credits}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editCourse(${c.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                if (!$.fn.dataTable.isDataTable('#coursesTable')) {
+                    $('#coursesTable').DataTable();
+                }
+            }
+        }
+
+        function showAddProgram() {
+            const name = prompt('Program Name:');
+            const code = prompt('Program Code:');
+            const dept = prompt('Department:');
+            const duration = prompt('Duration (months):', '12');
+            
+            if (name && code) {
+                fetch('/api/admin/programs', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                    body: JSON.stringify({name, code, department: dept, duration_months: parseInt(duration)})
+                }).then(() => loadPrograms());
+            }
+        }
+
+        function showAddCourse() {
+            const programId = prompt('Program ID:');
+            const code = prompt('Course Code:');
+            const title = prompt('Course Title:');
+            const desc = prompt('Description:');
+            const credits = prompt('Credits:', '3');
+            
+            if (programId && code && title) {
+                fetch('/api/admin/courses', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                    body: JSON.stringify({program_id: parseInt(programId), code, title, description: desc, credits: parseInt(credits)})
+                }).then(() => loadCourses());
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

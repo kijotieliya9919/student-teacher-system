@@ -1,0 +1,12 @@
+flask==3.0.0
+flask-cors==4.0.0
+python-dotenv==1.0.0
+sqlalchemy
+aiosqlite
+passlib
+python-jose
+bcrypt
+fastapi
+uvicorn
+email-validator
+python-multipart

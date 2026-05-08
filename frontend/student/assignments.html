@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Assignments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-info">
+        <div class="container">
+            <a class="navbar-brand" href="#">My Assignments</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/student/dashboard.html">Dashboard</a>
+                <a class="nav-link text-white" href="/student/progress.html">Progress</a>
+                <a class="nav-link text-white" href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <div id="assignmentsList"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/student/login.html';
+        
+        async function loadAssignments() {
+            const response = await fetch('/api/student/assignments', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                const assignments = await response.json();
+                document.getElementById('assignmentsList').innerHTML = assignments.map(a => {
+                    const deadlinePassed = a.deadline && new Date(a.deadline) < new Date();
+                    return `
+                    <div class="card mb-3 ${deadlinePassed ? 'border-danger' : ''}">
+                        <div class="card-body">
+                            <h5>${a.title}</h5>
+                            <p>${a.description || 'No description'}</p>
+                            <p><small>File: ${a.file_name} | Type: ${a.file_type} | Posted: ${new Date(a.created_at).toLocaleDateString()}</small></p>
+                            ${a.deadline ? `<p><small class="${deadlinePassed ? 'text-danger' : 'text-warning'}">Deadline: ${new Date(a.deadline).toLocaleString()} ${deadlinePassed ? '(PASSED)' : ''}</small></p>` : ''}
+                            <button class="btn btn-primary btn-sm" onclick="downloadAssignment(${a.id}, '${a.file_name}')">Download</button>
+                            ${deadlinePassed ? '<span class="text-danger">Submission closed</span>' : `<button class="btn btn-success btn-sm" onclick="submitAssignment(${a.id})">Submit Work</button>`}
+                        </div>
+                    </div>
+                    `}).join('');
+            }
+        }
+        
+        async function downloadAssignment(id, fileName) {
+            const response = await fetch(`/api/student/download/${id}`, {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+        }
+        
+        function submitAssignment(id) {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.pdf,.docx,.xlsx,.doc,.xls';
+            fileInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`/api/student/submit/${id}`, {
+                    method: 'POST',
+                    headers: {'Authorization': `Bearer ${token}`},
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Assignment submitted successfully!');
+                    loadAssignments();
+                } else {
+                    const data = await response.json();
+                    alert(data.detail);
+                }
+            };
+            fileInput.click();
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+        
+        loadAssignments();
+    </script>
+</body>
+</html>

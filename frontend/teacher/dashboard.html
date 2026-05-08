@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+        <div class="container">
+            <a class="navbar-brand" href="#">Teacher Dashboard</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/teacher/upload.html">Upload Assignment</a>
+                <a class="nav-link text-white" href="/teacher/students.html">View Students</a>
+                <a class="nav-link text-white" href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <h3>My Assignments</h3>
+        <div id="assignmentsList"></div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/teacher/login.html';
+        
+        async function loadAssignments() {
+            const response = await fetch('/api/teacher/assignments', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                const assignments = await response.json();
+                document.getElementById('assignmentsList').innerHTML = assignments.map(a => `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5>${a.title}</h5>
+                            <p>Class: ${a.class_name} | File: ${a.file_name}</p>
+                            <button class="btn btn-warning btn-sm" onclick="viewSubmissions(${a.id})">View Submissions</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteAssignment(${a.id})">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        async function deleteAssignment(id) {
+            if (confirm('Delete this assignment?')) {
+                await fetch(`/api/assignments/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                loadAssignments();
+            }
+        }
+        
+        function viewSubmissions(id) {
+            window.location.href = `/teacher/submissions.html?assignment_id=${id}`;
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+        
+        loadAssignments();
+    </script>
+</body>
+</html>

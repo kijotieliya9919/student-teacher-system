@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration | FORESTRY TRAINING INSTITUTE OLMOTONYI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --forest-primary: #2d5016;
+            --forest-secondary: #8b4513;
+            --forest-accent: #ffa500;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .register-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        .register-header {
+            background: var(--forest-primary);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .register-body {
+            padding: 2rem;
+        }
+        .btn-forest {
+            background: var(--forest-primary);
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 0.5rem;
+            width: 100%;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .btn-forest:hover {
+            background: #1a3a0a;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .alert {
+            display: none;
+        }
+        .form-select:focus, .form-control:focus {
+            border-color: var(--forest-primary);
+            box-shadow: 0 0 0 0.2rem rgba(45, 80, 22, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <div class="register-card">
+        <div class="register-header">
+            <h3><img src="/static/images/logo.png" height="32" alt="" style="vertical-align: middle;"> FORESTRY INSTITUTE</h3>
+            <p class="mb-0">Student Registration</p>
+        </div>
+        <div class="register-body">
+            <div class="alert alert-danger" id="errorAlert" role="alert"></div>
+            <div class="alert alert-success" id="successAlert" role="alert"></div>
+            <form id="registerForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" class="form-control" id="email" required 
+                           placeholder="student@forestry.edu">
+                </div>
+                <div class="mb-3">
+                    <label for="fullName" class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="fullName" required 
+                           placeholder="John Doe">
+                </div>
+                <div class="mb-3">
+                    <label for="program" class="form-label">Program</label>
+                    <div class="input-group mb-2">
+                        <select class="form-select" id="program">
+                            <option value="">Select a program...</option>
+                        </select>
+                        <button class="btn btn-outline-secondary" type="button" id="toggleProgram">Type Instead</button>
+                    </div>
+                    <input type="text" class="form-control d-none" id="programText" placeholder="Enter your program name (e.g., Bachelor in Forestry)">
+                    <small class="text-muted">Select from list or type your program name</small>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" required 
+                           placeholder="Minimum 6 characters">
+                </div>
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" required 
+                           placeholder="Re-enter password">
+                </div>
+                <button type="submit" class="btn btn-forest mb-3">
+                    <i class="fas fa-user-plus me-2"></i> Register
+                </button>
+                <div class="text-center">
+                    <a href="/student/login.html" class="text-muted small">Already have an account? Login</a><br>
+                    <a href="/" class="text-muted small">← Back to Home</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let useTextInput = false;
+        
+        // Toggle between dropdown and text input
+        document.getElementById('toggleProgram').addEventListener('click', function() {
+            const select = document.getElementById('program');
+            const textInput = document.getElementById('programText');
+            const toggleBtn = this;
+            
+            useTextInput = !useTextInput;
+            
+            if (useTextInput) {
+                select.classList.add('d-none');
+                textInput.classList.remove('d-none');
+                textInput.required = true;
+                select.required = false;
+                toggleBtn.textContent = 'Select Instead';
+            } else {
+                select.classList.remove('d-none');
+                textInput.classList.add('d-none');
+                textInput.required = false;
+                select.required = true;
+                toggleBtn.textContent = 'Type Instead';
+            }
+        });
+
+        // Load programs
+        async function loadPrograms() {
+            const response = await fetch('/api/programs');
+            if (response.ok) {
+                const programs = await response.json();
+                const select = document.getElementById('program');
+                programs.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.code} - ${p.name}`;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const fullName = document.getElementById('fullName').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const errorAlert = document.getElementById('errorAlert');
+            const successAlert = document.getElementById('successAlert');
+            
+            errorAlert.style.display = 'none';
+            successAlert.style.display = 'none';
+            
+            if (password !== confirmPassword) {
+                errorAlert.textContent = 'Passwords do not match';
+                errorAlert.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorAlert.textContent = 'Password must be at least 6 characters';
+                errorAlert.style.display = 'block';
+                return;
+            }
+            
+            // Get program_id or program_name
+            let programId = null;
+            let programName = null;
+            
+            if (useTextInput) {
+                programName = document.getElementById('programText').value;
+                if (!programName) {
+                    errorAlert.textContent = 'Please enter your program name';
+                    errorAlert.style.display = 'block';
+                    return;
+                }
+            } else {
+                programId = document.getElementById('program').value;
+                if (!programId) {
+                    errorAlert.textContent = 'Please select a program';
+                    errorAlert.style.display = 'block';
+                    return;
+                }
+            }
+            
+            try {
+                const body = {
+                    email: email,
+                    full_name: fullName,
+                    password: password
+                };
+                
+                if (programId) body.program_id = programId;
+                if (programName) body.program_name = programName;
+                
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    successAlert.textContent = 'Registration successful! You can now login.';
+                    successAlert.style.display = 'block';
+                    document.getElementById('registerForm').reset();
+                } else {
+                    errorAlert.textContent = data.detail || 'Registration failed';
+                    errorAlert.style.display = 'block';
+                }
+            } catch (error) {
+                errorAlert.textContent = 'Connection error. Please try again.';
+                errorAlert.style.display = 'block';
+            }
+        });
+        
+        loadPrograms();
+    </script>
+</body>
+</html>

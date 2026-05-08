@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">User Management</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link text-white" href="/admin/dashboard.html">Dashboard</a>
+                <a class="nav-link text-white" href="#" onclick="logout()">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        <button class="btn btn-primary mb-3" onclick="showAddModal()">Add New User</button>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Class</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/admin/login.html';
+        
+        async function loadUsers() {
+            const response = await fetch('/api/admin/users', {
+                headers: {'Authorization': `Bearer ${token}`}
+            });
+            if (response.ok) {
+                const users = await response.json();
+                const tbody = document.getElementById('userTable');
+                tbody.innerHTML = '';
+                users.forEach(u => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${u.email}</td>
+                        <td>${u.full_name}</td>
+                        <td><span class="badge bg-${u.role === 'admin' ? 'danger' : u.role === 'teacher' ? 'success' : 'primary'}">${u.role}</span></td>
+                        <td>${u.class_name || 'N/A'}</td>
+                        <td><span class="badge bg-${u.is_active ? 'success' : 'danger'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="toggleUser(${u.id}, ${u.is_active})">${u.is_active ? 'Disable' : 'Enable'}</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        
+        function showAddModal() {
+            const email = prompt('Email:');
+            const name = prompt('Full Name:');
+            const role = prompt('Role (teacher/student):');
+            const password = prompt('Password:');
+            const className = role === 'student' ? prompt('Class Name:') : '';
+            
+            fetch('/api/admin/users', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                body: JSON.stringify({email: email, full_name: name, password: password, role: role, class_name: className})
+            }).then(response => {
+                if (response.ok) {
+                    alert('User created successfully!');
+                    loadUsers();
+                } else {
+                    response.json().then(data => alert('Error: ' + (data.detail || 'Creation failed')));
+                }
+            }).catch(err => alert('Error: ' + err));
+        }
+        
+        async function toggleUser(id, currentStatus) {
+            await fetch(`/api/admin/users/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                body: JSON.stringify({is_active: !currentStatus})
+            });
+            loadUsers();
+        }
+        
+        async function deleteUser(id) {
+            if (confirm('Delete this user?')) {
+                await fetch(`/api/admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                loadUsers();
+            }
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+        
+        loadUsers();
+    </script>
+</body>
+</html>
