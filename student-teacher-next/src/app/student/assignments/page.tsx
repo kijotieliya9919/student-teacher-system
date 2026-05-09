@@ -61,7 +61,11 @@ export default async function StudentAssignments() {
                     <h3 className="text-lg font-semibold">{a.title}</h3>
                     <p className="text-gray-600 mt-1">{a.description || 'No description'}</p>
                     <div className="mt-2 text-sm text-gray-500 space-y-1">
-                      <p>File: {a.file_name} ({a.file_type})</p>
+                      <p>
+                        File: {a.file_name} ({a.file_type})
+                        <a href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${a.file_path}`}
+                          target="_blank" className="ml-2 text-blue-600 hover:underline">Download</a>
+                      </p>
                       {a.deadline && (
                         <p className={deadlinePassed ? 'text-red-500 font-medium' : 'text-yellow-600'}>
                           Deadline: {new Date(a.deadline).toLocaleString()}
