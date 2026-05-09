@@ -79,47 +79,7 @@ def _make_public_url(bucket, path):
     return sb.get_public_url(bucket, path)
 
 
-def auto_seed_users():
-    try:
-        existing = sb.table('users').select(filters={'role': 'eq.admin'}, limit=1)
-        if existing:
-            return
 
-        svc_key = os.environ.get('SUPABASE_SERVICE_KEY', '')
-        if not svc_key or svc_key == sb.SUPABASE_ANON_KEY:
-            logging.warning('SUPABASE_SERVICE_KEY not set — skipping auto-seed')
-            return
-
-        default_users = [
-            ('admin@forestry.edu', 'Admin123!', 'System Administrator', 'admin', None),
-            ('teacher@forestry.edu', 'Teacher123!', 'Default Instructor', 'teacher', 'BCF Year 1'),
-            ('student@forestry.edu', 'Student123!', 'Default Student', 'student', 'BCF Year 1'),
-        ]
-
-        for email, pw, name, role, class_name in default_users:
-            status, data = sb.admin_create_user(email, pw, {'role': role, 'full_name': name})
-            if status in (200, 201):
-                uid = data.get('id')
-                if uid:
-                    profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
-                    if class_name:
-                        profile['class_name'] = class_name
-                    sb.table('users').insert(profile)
-                    logging.info(f'Auto-seeded user: {email}')
-            elif 'already exists' in str(data).lower():
-                uid = data.get('id')
-                if uid:
-                    existing_user = sb.table('users').select(filters={'id': f'eq.{uid}'})
-                    if not existing_user:
-                        profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
-                        if class_name:
-                            profile['class_name'] = class_name
-                        sb.table('users').insert(profile)
-                        logging.info(f'Auto-seeded profile for existing auth user: {email}')
-    except Exception as e:
-        logging.warning(f'Auto-seed skipped (DB not ready yet): {e}')
-
-auto_seed_users()
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────
@@ -1103,6 +1063,53 @@ def serve_index():
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy', 'message': 'System is operational'})
+
+_seeded = False
+
+@app.route('/api/seed', methods=['GET'])
+def seed_users():
+    global _seeded
+    svc_key = os.environ.get('SUPABASE_SERVICE_KEY', '')
+    if not svc_key or svc_key == sb.SUPABASE_ANON_KEY:
+        return jsonify({'error': 'SUPABASE_SERVICE_KEY not set in environment variables'}), 400
+    seeded = []
+    skipped = []
+    errors = []
+    for email, pw, name, role, class_name in [
+        ('admin@forestry.edu', 'Admin123!', 'System Administrator', 'admin', None),
+        ('teacher@forestry.edu', 'Teacher123!', 'Default Instructor', 'teacher', 'BCF Year 1'),
+        ('student@forestry.edu', 'Student123!', 'Default Student', 'student', 'BCF Year 1'),
+    ]:
+        try:
+            status, data = sb.admin_create_user(email, pw, {'role': role, 'full_name': name})
+            if status in (200, 201):
+                uid = data.get('id')
+                if uid:
+                    profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
+                    if class_name:
+                        profile['class_name'] = class_name
+                    sb.table('users').insert(profile)
+                    seeded.append(email)
+            elif 'already exists' in str(data).lower():
+                uid = data.get('id')
+                if uid:
+                    existing_user = sb.table('users').select(filters={'id': f'eq.{uid}'})
+                    if not existing_user:
+                        profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
+                        if class_name:
+                            profile['class_name'] = class_name
+                        sb.table('users').insert(profile)
+                        seeded.append(f'{email} (profile created)')
+                    else:
+                        skipped.append(email)
+                else:
+                    skipped.append(email)
+            else:
+                errors.append(f'{email}: {str(data)[:200]}')
+        except Exception as e:
+            errors.append(f'{email}: {str(e)[:200]}')
+    _seeded = True
+    return jsonify({'seeded': seeded, 'skipped': skipped, 'errors': errors})
 
 
 @app.route('/<path:filename>')
