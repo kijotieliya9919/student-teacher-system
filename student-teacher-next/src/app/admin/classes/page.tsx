@@ -17,7 +17,7 @@ export default async function AdminClasses() {
     .eq('role', 'teacher')
 
   const classData = await Promise.all((classes || []).map(async (c: any) => {
-    const teacher = (teachers || []).find(t => t.id === c.teacher_id)
+    const teacher = (teachers || []).find((t: any) => t.id === c.teacher_id)
     const { count } = await svc
       .from('users')
       .select('*', { count: 'exact', head: true })
