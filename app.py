@@ -739,7 +739,7 @@ def student_list_assignments():
 
         c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
         active.append({
-            'id': a['id'], 'title': a['title'], 'description': a.get('description'),
+            'id': a.get('id'), 'title': a.get('title'), 'description': a.get('description'),
             'file_name': a.get('file_name'), 'file_type': a.get('file_type'),
             'course_title': c.get('title') if c else None,
             'created_at': a.get('created_at'), 'deadline': a.get('deadline')
@@ -795,7 +795,7 @@ def submit_assignment(assignment_id):
 
     if a.get('deadline'):
         try:
-            deadline = datetime.fromisoformat(a['deadline'].replace('Z', '+00:00'))
+            deadline = datetime.fromisoformat(a.get('deadline', '').replace('Z', '+00:00'))
             if datetime.now() > deadline:
                 return jsonify({'detail': 'Submission deadline has passed'}), 403
         except (ValueError, AttributeError):
@@ -839,7 +839,7 @@ def student_list_submissions():
     for s in (submissions or []):
         a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True) if s.get('assignment_id') else None
         result.append({
-            'id': s['id'], 'assignment_title': a.get('title') if a else 'Unknown',
+            'id': s.get('id'), 'assignment_title': a.get('title') if a else 'Unknown',
             'grade': s.get('grade'), 'feedback': s.get('feedback'),
             'submitted_at': s.get('submitted_at')
         })
@@ -894,7 +894,7 @@ def student_gpa():
             a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True) if s.get('assignment_id') else None
             c = sb.table('courses', request.token).select(filters={'id': f'eq.{a.get("course_id")}'}, single=True) if a and a.get('course_id') else None
             credits = c.get('credits', 3) if c else 3
-            total_points += grade_points[s['grade']] * credits
+            total_points += grade_points[s.get('grade')] * credits
             total_credits += credits
 
     gpa = round(total_points / total_credits, 2) if total_credits > 0 else 0
