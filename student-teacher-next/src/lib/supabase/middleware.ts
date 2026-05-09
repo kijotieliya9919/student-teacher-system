@@ -21,24 +21,22 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
+  const isProtected = pathname.startsWith('/student') || pathname.startsWith('/teacher') || pathname.startsWith('/admin')
 
-  if (!session && (
-    pathname.startsWith('/student') ||
-    pathname.startsWith('/teacher') ||
-    pathname.startsWith('/admin')
-  )) {
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (isProtected && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (session) {
+  if (user) {
     const { data: profile } = await supabase
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single()
 
     if (
