@@ -535,7 +535,7 @@ def instructor_assignments():
     if ext not in allowed_extensions:
         return jsonify({'detail': 'File type not allowed'}), 400
 
-    course = sb.table('courses').select(filters={'title': f'eq.{course_name}'}, single=True)
+    course = sb.table('courses', request.token).select(filters={'title': f'eq.{course_name}'}, single=True)
     if course and course.get('id'):
         course_id = course['id']
     else:
@@ -565,7 +565,7 @@ def instructor_assignments():
         'instructor_id': uid, 'deadline': deadline or None
     })
 
-    enrolled = sb.table('enrollments').select(filters={
+    enrolled = sb.table('enrollments', request.token).select(filters={
         'course_id': f'eq.{course_id}', 'status': 'eq.active'
     })
     by_class = _service_table('users').select(filters={
@@ -605,28 +605,28 @@ def get_submissions():
 
     if assignment_id:
         filters = {'assignment_id': f'eq.{assignment_id}'}
-        submissions = sb.table('submissions').select(filters=filters)
+        submissions = sb.table('submissions', request.token).select(filters=filters)
         return jsonify(_build_submissions_list(submissions, uid, is_submissions=True))
     elif course_id:
-        all_a = sb.table('assignments').select(filters={'course_id': f'eq.{course_id}'})
+        all_a = sb.table('assignments', request.token).select(filters={'course_id': f'eq.{course_id}'})
         return jsonify(_build_submissions_list(all_a, uid))
     else:
-    all_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
+        all_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
         return jsonify(_build_submissions_list(all_a, uid))
 
 
-def _build_submissions_list(items, uid, is_submissions=False):
+def _build_submissions_list(items, uid, is_submissions=False, token=None):
     result = []
     if is_submissions:
         for s in (items or []):
             aid = s.get('assignment_id')
-            a = sb.table('assignments').select(filters={'id': f'eq.{aid}'}, single=True) if aid else None
+            a = sb.table('assignments', token).select(filters={'id': f'eq.{aid}'}, single=True) if aid else None
             if a and a.get('instructor_id') != uid:
                 continue
             sid = s.get('student_id')
             u = _service_table('users').select(filters={'id': f'eq.{sid}'}, single=True) if sid else None
             cid = a.get('course_id') if a else None
-            c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+            c = sb.table('courses', token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
             result.append({
                 'id': s.get('id'), 'student_name': u.get('full_name') if u else 'Unknown',
                 'assignment_title': a.get('title') if a else 'Unknown',
@@ -638,12 +638,12 @@ def _build_submissions_list(items, uid, is_submissions=False):
         for a in (items or []):
             if a.get('instructor_id') != uid:
                 continue
-            subs = sb.table('submissions').select(filters={'assignment_id': f'eq.{a.get("id")}'})
+            subs = sb.table('submissions', token).select(filters={'assignment_id': f'eq.{a.get("id")}'})
             for s in (subs or []):
                 sid = s.get('student_id')
                 u = _service_table('users').select(filters={'id': f'eq.{sid}'}, single=True) if sid else None
                 cid = a.get('course_id')
-                c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+                c = sb.table('courses', token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
                 result.append({
                     'id': s.get('id'), 'student_name': u.get('full_name') if u else 'Unknown',
                     'assignment_title': a.get('title'),
