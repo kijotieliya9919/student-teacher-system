@@ -257,10 +257,16 @@ def manage_users():
         return jsonify({'detail': 'Email already exists'}), 400
 
     status, auth_data = sb.admin_create_user(email, password, {'role': role, 'full_name': full_name})
-    if status not in (200, 201):
-        return jsonify({'detail': 'Failed to create auth user'}), 400
+    if status in (200, 201):
+        auth_id = auth_data.get('id')
+    elif 'already exists' in str(auth_data).lower() or 'email_exists' in str(auth_data).lower():
+        auth_status, auth_data2 = sb.sign_in(email, password)
+        if auth_status != 200:
+            return jsonify({'detail': 'Email exists in system but password does not match existing account'}), 400
+        auth_id = auth_data2.get('user', {}).get('id')
+    else:
+        return jsonify({'detail': f'Failed to create auth user: {str(auth_data)[:200]}'}), 400
 
-    auth_id = auth_data.get('id')
     if auth_id:
         sb.table('users', request.token).insert({
             'id': auth_id, 'email': email, 'full_name': full_name,
