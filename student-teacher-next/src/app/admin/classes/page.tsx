@@ -20,7 +20,7 @@ export default async function AdminClasses() {
     .select('id, full_name, email')
     .eq('role', 'teacher')
 
-  const classData = await Promise.all((classes || []).map(async (c) => {
+  const classData = await Promise.all((classes || []).map(async (c: any) => {
     const { count } = await svc
       .from('users')
       .select('*', { count: 'exact', head: true })

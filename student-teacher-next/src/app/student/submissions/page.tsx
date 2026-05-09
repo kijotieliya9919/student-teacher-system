@@ -8,9 +8,21 @@ export default async function StudentSubmissions() {
 
   const { data: submissions } = await supabase
     .from('submissions')
-    .select('*, assignments_new!inner(title, deadline)')
+    .select('*')
     .eq('student_id', user.id)
     .order('submitted_at', { ascending: false })
+
+  const assignmentsMap = new Map<number, any>()
+  if (submissions && submissions.length > 0) {
+    const ids = [...new Set(submissions.map(s => s.assignment_id))]
+    const { data: assignments } = await supabase
+      .from('assignments_new')
+      .select('id, title')
+      .in('id', ids)
+    if (assignments) {
+      assignments.forEach(a => assignmentsMap.set(a.id, a))
+    }
+  }
 
   return (
     <div>
@@ -32,20 +44,23 @@ export default async function StudentSubmissions() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map(s => (
-                <tr key={s.id} className="border-t">
-                  <td className="p-3">{s.assignments_new?.title || 'Unknown'}</td>
-                  <td className="p-3 text-sm text-gray-500">
-                    {new Date(s.submitted_at).toLocaleString()}
-                  </td>
-                  <td className="p-3">
-                    <span className={`inline-block px-2 py-1 rounded text-sm ${s.grade ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {s.grade || 'Pending'}
-                    </span>
-                  </td>
-                  <td className="p-3 text-sm">{s.feedback || '-'}</td>
-                </tr>
-              ))}
+              {submissions.map(s => {
+                const assignment = assignmentsMap.get(s.assignment_id)
+                return (
+                  <tr key={s.id} className="border-t">
+                    <td className="p-3">{assignment?.title || 'Unknown'}</td>
+                    <td className="p-3 text-sm text-gray-500">
+                      {new Date(s.submitted_at).toLocaleString()}
+                    </td>
+                    <td className="p-3">
+                      <span className={`inline-block px-2 py-1 rounded text-sm ${s.grade ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {s.grade || 'Pending'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm">{s.feedback || '-'}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
