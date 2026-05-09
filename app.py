@@ -244,7 +244,7 @@ def manage_users():
     if request.method == 'GET':
         role = request.args.get('role')
         filters = {'role': f'eq.{role}'} if role else None
-        users = sb.table('users', request.token).select(filters=filters)
+        users = _service_table('users').select(filters=filters)
         return jsonify([{
             'id': u['id'], 'email': u['email'], 'full_name': u['full_name'],
             'role': u['role'], 'is_active': bool(u.get('is_active', True)),
@@ -258,7 +258,7 @@ def manage_users():
     role = data.get('role', 'teacher')
     class_name = data.get('class_name', '')
 
-    existing = sb.table('users').select(filters={'email': f'eq.{email}'})
+    existing = _service_table('users').select(filters={'email': f'eq.{email}'})
     if existing:
         return jsonify({'detail': 'Email already exists'}), 400
 
@@ -309,7 +309,7 @@ def get_audit_logs():
     logs = sb.table('audit_logs').select(order='timestamp.desc', limit=500)
     result = []
     for log in (logs or []):
-        u = sb.table('users').select(filters={'id': f'eq.{log["user_id"]}'}, single=True)
+        u = _service_table('users').select(filters={'id': f'eq.{log["user_id"]}'}, single=True)
         result.append({
             'id': log['id'], 'timestamp': log.get('timestamp'),
             'action': log['action'], 'details': log.get('details'),
@@ -584,7 +584,7 @@ def teacher_assignments():
     enrolled = sb.table('enrollments').select(filters={
         'course_id': f'eq.{course_id}', 'status': 'eq.active'
     })
-    by_class = sb.table('users').select(filters={
+    by_class = _service_table('users').select(filters={
         'role': 'eq.student', 'is_active': 'eq.true', 'class_name': f'eq.{class_name}'
     })
 
@@ -731,7 +731,7 @@ def teacher_list_students():
     filters = {'role': 'eq.student'}
     if class_name:
         filters['class_name'] = f'eq.{class_name}'
-    students = sb.table('users').select(filters=filters)
+    students = _service_table('users').select(filters=filters)
     return jsonify([{
         'id': s['id'], 'email': s['email'],
         'full_name': s['full_name'], 'class_name': s.get('class_name')
