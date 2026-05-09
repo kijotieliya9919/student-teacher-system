@@ -417,8 +417,8 @@ def manage_course(course_id):
 @role_required('teacher')
 def instructor_dashboard():
     uid = request.user['auth_id']
-    assignments = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'}, order='created_at.desc', limit=5)
-    total_a = sb.table('assignments').count(filters={'instructor_id': f'eq.{uid}'})
+    assignments = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'}, order='created_at.desc', limit=5)
+    total_a = sb.table('assignments', request.token).count(filters={'instructor_id': f'eq.{uid}'})
 
     courses_set = set()
     for a in (assignments or []):
@@ -426,7 +426,7 @@ def instructor_dashboard():
             courses_set.add(a['course_id'])
     # Also find courses linked to teacher's program
     if request.user.get('program_id'):
-        prog_courses = sb.table('courses').select(filters={'program_id': f'eq.{request.user["program_id"]}'})
+        prog_courses = sb.table('courses', request.token).select(filters={'program_id': f'eq.{request.user["program_id"]}'})
         for c in (prog_courses or []):
             courses_set.add(c['id'])
 
@@ -434,7 +434,7 @@ def instructor_dashboard():
     pending = 0
     all_a = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'})
     for a in (all_a or []):
-        subs = sb.table('submissions').count(filters={
+        subs = sb.table('submissions', request.token).count(filters={
             'assignment_id': f'eq.{a["id"]}',
             'grade': 'is.null'
         })
@@ -444,7 +444,7 @@ def instructor_dashboard():
     for a in (assignments or []):
         c = None
         if a.get('course_id'):
-            c = sb.table('courses').select(filters={'id': f'eq.{a.get("course_id")}'}, single=True)
+            c = sb.table('courses', request.token).select(filters={'id': f'eq.{a.get("course_id")}'}, single=True)
         recent.append({
             'title': a.get('title'),
             'course_title': c.get('title') if c else None,
@@ -468,14 +468,14 @@ def instructor_courses():
     seen = set()
 
     # Courses from teacher's assignments
-    teacher_a = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'})
+    teacher_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
     for a in (teacher_a or []):
         cid = a.get('course_id')
         if cid and cid not in seen:
             seen.add(cid)
-            c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True)
+            c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True)
             if c:
-                p = sb.table('programs').select(filters={'id': f'eq.{c.get("program_id")}'}, single=True) if c.get('program_id') else None
+                p = sb.table('programs', request.token).select(filters={'id': f'eq.{c.get("program_id")}'}, single=True) if c.get('program_id') else None
                 courses.append({
                     'id': c['id'], 'code': c.get('code'), 'title': c.get('title'),
                     'description': c.get('description'), 'credits': c.get('credits'),
@@ -485,11 +485,11 @@ def instructor_courses():
 
     # Courses from teacher's program
     if request.user.get('program_id'):
-        prog_courses = sb.table('courses').select(filters={'program_id': f'eq.{request.user["program_id"]}'})
+        prog_courses = sb.table('courses', request.token).select(filters={'program_id': f'eq.{request.user["program_id"]}'})
         for c in (prog_courses or []):
             if c['id'] not in seen:
                 seen.add(c['id'])
-                p = sb.table('programs').select(filters={'id': f'eq.{c.get("program_id")}'}, single=True) if c.get('program_id') else None
+                p = sb.table('programs', request.token).select(filters={'id': f'eq.{c.get("program_id")}'}, single=True) if c.get('program_id') else None
                 courses.append({
                     'id': c['id'], 'code': c.get('code'), 'title': c.get('title'),
                     'description': c.get('description'), 'credits': c.get('credits'),
@@ -512,7 +512,7 @@ def instructor_assignments():
         )
         result = []
         for a in (assignments or []):
-            c = sb.table('courses').select(filters={'id': f'eq.{a.get("course_id")}'}, single=True) if a.get('course_id') else None
+            c = sb.table('courses', request.token).select(filters={'id': f'eq.{a.get("course_id")}'}, single=True) if a.get('course_id') else None
             result.append({
                 'id': a.get('id'), 'title': a.get('title'),
                 'course_title': c.get('title') if c else None,
@@ -611,7 +611,7 @@ def get_submissions():
         all_a = sb.table('assignments').select(filters={'course_id': f'eq.{course_id}'})
         return jsonify(_build_submissions_list(all_a, uid))
     else:
-        all_a = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'})
+    all_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
         return jsonify(_build_submissions_list(all_a, uid))
 
 
