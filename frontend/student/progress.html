@@ -44,6 +44,8 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadProgress();
+            loadSubmissions();
         })();
         
         async function loadProgress() {
@@ -79,9 +81,6 @@
                 `).join('');
             }
         }
-        
-        loadProgress();
-        loadSubmissions();
     </script>
 </body>
 </html>

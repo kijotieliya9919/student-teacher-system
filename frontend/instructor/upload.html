@@ -151,6 +151,7 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadCourses();
         })();
 
         // Load instructor's courses for autocomplete
@@ -194,7 +195,6 @@
             }
         });
 
-        loadCourses();
     </script>
 </body>
 </html>

@@ -119,6 +119,7 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadAuditLogs();
         })();
 
         async function loadAuditLogs() {
@@ -142,7 +143,6 @@
             }
         }
 
-        loadAuditLogs();
     </script>
 </body>
 </html>

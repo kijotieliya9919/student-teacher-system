@@ -135,13 +135,14 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
         let token = null;
+        let programs = [];
+        let courses = [];
+
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadData();
         })();
-
-        let programs = [];
-        let courses = [];
 
         async function loadData() {
             await loadPrograms();
@@ -284,7 +285,6 @@
             }
         }
 
-        loadData();
     </script>
 </body>
 </html>

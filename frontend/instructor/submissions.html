@@ -114,6 +114,7 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadSubmissions();
         })();
 
         async function loadSubmissions() {
@@ -181,7 +182,6 @@
             }
         }
 
-        loadSubmissions();
     </script>
 </body>
 </html>
