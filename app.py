@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import logging
+import requests
 from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
