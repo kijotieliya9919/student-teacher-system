@@ -256,8 +256,7 @@
         }
         
         function logout() {
-            localStorage.clear();
-            window.location.href = '/';
+            logout();
         }
         
         async function downloadAssignment(id, fileName) {
