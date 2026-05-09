@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 
 export default async function AdminDashboard() {
-  const { user } = await requireAuth('admin')
+  await requireAuth('admin')
 
   return (
     <div>

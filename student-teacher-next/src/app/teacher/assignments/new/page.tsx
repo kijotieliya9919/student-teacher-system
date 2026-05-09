@@ -22,7 +22,7 @@ export default async function NewAssignment() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-green-800 mb-6">Upload Assignment</h1>
-      <UploadForm classes={classes || []} teacherId={user.id} />
+      <UploadForm classes={classes || []} teacherId={userId} />
     </div>
   )
 }

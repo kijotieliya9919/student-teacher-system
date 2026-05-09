@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import CreateUserForm from './create-user-form'
 
 export default async function AdminUsers() {
-  const { supabase } = await requireAuth('admin')
+  await requireAuth('admin')
   const svc = createServiceClient()
 
   const { data: users } = await svc

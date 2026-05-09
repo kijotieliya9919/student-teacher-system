@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import CreateClassForm from './create-class-form'
 
 export default async function AdminClasses() {
-  const { supabase } = await requireAuth('admin')
+  await requireAuth('admin')
   const svc = createServiceClient()
 
   const { data: classes } = await svc

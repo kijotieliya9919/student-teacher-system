@@ -12,11 +12,11 @@ export default async function AssignmentSubmissions({ params }: { params: Promis
     .eq('id', assignmentId)
     .single()
 
-  if (!assignment || assignment.teacher_id !== user.id) {
+  if (!assignment || assignment.teacher_id !== userId) {
     return <div className="text-red-600">Assignment not found or access denied.</div>
   }
 
-  const { data: logs } = await supabase
+  const { data: logs } = await svc
     .from('audit_logs')
     .select('*, users!inner(full_name, email)')
     .eq('action', `submission_${assignmentId}`)
@@ -24,7 +24,7 @@ export default async function AssignmentSubmissions({ params }: { params: Promis
 
   const logsList = logs || []
 
-  const { data: gradeLogs } = await supabase
+  const { data: gradeLogs } = await svc
     .from('audit_logs')
     .select('*')
     .like('action', `grade_${assignmentId}_%`)
