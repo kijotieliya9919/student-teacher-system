@@ -41,7 +41,7 @@ export default async function AdminUsers() {
             </tr>
           </thead>
           <tbody>
-            {(users || []).map(u => (
+            {(users || []).map((u: any) => (
               <tr key={u.id} className="border-t">
                 <td className="p-3">{u.full_name}</td>
                 <td className="p-3 text-sm text-gray-500">{u.email}</td>

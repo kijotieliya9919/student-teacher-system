@@ -13,12 +13,18 @@ export default async function TeacherDashboard() {
     .eq('teacher_id', user.id)
     .order('created_at', { ascending: false })
 
-  const { data: submissions } = await supabase
-    .from('submissions')
-    .select('*, assignments_new!inner(teacher_id)')
-    .eq('assignments_new.teacher_id', user.id)
+  const assignmentIds = (assignments || []).map(a => a.id)
+  let pendingCount = 0
+  let totalSubmissions = 0
 
-  const pendingSubmissions = (submissions || []).filter(s => !s.grade)
+  if (assignmentIds.length > 0) {
+    const { data: subs } = await supabase
+      .from('submissions')
+      .select('grade')
+      .in('assignment_id', assignmentIds)
+    totalSubmissions = subs?.length || 0
+    pendingCount = (subs || []).filter(s => !s.grade).length
+  }
 
   return (
     <div>
@@ -31,11 +37,11 @@ export default async function TeacherDashboard() {
         </div>
         <div className="bg-yellow-500 text-white p-6 rounded-lg shadow">
           <h3 className="text-lg opacity-90">Pending Grading</h3>
-          <p className="text-3xl font-bold">{pendingSubmissions.length}</p>
+          <p className="text-3xl font-bold">{pendingCount}</p>
         </div>
         <div className="bg-green-500 text-white p-6 rounded-lg shadow">
           <h3 className="text-lg opacity-90">Total Submissions</h3>
-          <p className="text-3xl font-bold">{(submissions || []).length}</p>
+          <p className="text-3xl font-bold">{totalSubmissions}</p>
         </div>
       </div>
 
