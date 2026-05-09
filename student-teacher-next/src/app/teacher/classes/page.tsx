@@ -6,7 +6,7 @@ export default async function TeacherClasses() {
   const { data: profile } = await svc
     .from('users')
     .select('class_id')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   let classes: any[] = []

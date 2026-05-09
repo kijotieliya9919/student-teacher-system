@@ -24,9 +24,9 @@ export default async function StudentAssignments() {
     const { data: s } = await svc
       .from('audit_logs')
       .select('action, details')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .like('action', 'submission_%')
-    submissions = s?.map(log => ({
+    submissions = s?.map((log: any) => ({
       assignment_id: Number(log.action.replace('submission_', '')),
       grade: null,
     })) || []
