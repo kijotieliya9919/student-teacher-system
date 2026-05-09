@@ -21,33 +21,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const pathname = request.nextUrl.pathname
-  const isProtected = pathname.startsWith('/student') || pathname.startsWith('/teacher') || pathname.startsWith('/admin')
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
-  }
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (
-      (pathname.startsWith('/student') && profile?.role !== 'student') ||
-      (pathname.startsWith('/teacher') && profile?.role !== 'teacher') ||
-      (pathname.startsWith('/admin') && profile?.role !== 'admin')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-  }
+  await supabase.auth.getUser()
 
   return supabaseResponse
 }
