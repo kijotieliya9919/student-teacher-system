@@ -1,0 +1,24 @@
+@echo off
+echo ========================================
+echo STUDENT-TEACHER SYSTEM - SETUP HELPER
+echo ========================================
+echo.
+echo Step 1: Run the SQL migration in Supabase
+echo -----------------------------------------
+echo Go to: https://supabase.com/dashboard/project/jajfahyuglhbftphsktk/sql/new
+echo.
+echo Log in with your Supabase account, then:
+echo  - Open the file supabase_migration.sql in Notepad
+echo  - Copy ALL the text
+echo  - Paste it in the SQL Editor
+echo  - Click RUN (or press Ctrl+Enter)
+echo.
+echo Step 2: Seed the initial users
+echo -----------------------------------------
+echo After running the SQL, double-click this:
+echo.
+echo     seed_users.bat
+echo.
+echo (I'll create this file for you in the next step)
+echo.
+pause
