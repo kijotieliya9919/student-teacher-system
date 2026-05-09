@@ -27,29 +27,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'File upload failed: ' + uploadError.message }, { status: 500 })
     }
 
-    const { data: existing } = await svc.from('assignments').select('id').eq('id', assignmentId).maybeSingle()
-    if (!existing) {
-      const { data: newAssignment } = await svc.from('assignments_new').select('*').eq('id', assignmentId).single()
-      if (newAssignment) {
-        await svc.from('assignments').insert({
-          id: newAssignment.id,
-          course_id: 1,
-          title: newAssignment.title,
-          description: newAssignment.description,
-          file_path: newAssignment.file_path,
-          file_name: newAssignment.file_name,
-          file_type: newAssignment.file_type,
-          instructor_id: newAssignment.teacher_id,
-          deadline: newAssignment.deadline,
-          created_at: newAssignment.created_at,
-        })
-      }
-    }
-
-    const { error: insertError } = await svc.from('submissions').insert({
-      student_id: user.id,
-      assignment_id: assignmentId,
-      file_path: filePath,
+    const { error: insertError } = await svc.from('audit_logs').insert({
+      user_id: user.id,
+      action: `submission_${assignmentId}`,
+      details: filePath,
     })
 
     if (insertError) {
