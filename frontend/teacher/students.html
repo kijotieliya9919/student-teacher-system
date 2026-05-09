@@ -59,8 +59,8 @@
         }
         
         function logout() {
-            localStorage.clear();
-            window.location.href = '/';
+            logout();
+            return false;
         }
         
         loadStudents();
