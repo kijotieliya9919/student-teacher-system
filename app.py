@@ -343,7 +343,7 @@ def manage_programs():
     if request.method == 'GET':
         programs = sb.table('programs').select(order='name')
         return jsonify([{
-            'id': p['id'], 'name': p['name'], 'code': p['code'],
+            'id': p.get('id'), 'name': p.get('name'), 'code': p.get('code'),
             'department': p.get('department'), 'duration_months': p.get('duration_months')
         } for p in (programs or [])])
 
@@ -378,9 +378,9 @@ def manage_courses():
         courses = sb.table('courses').select()
         result = []
         for c in (courses or []):
-            p = sb.table('programs').select(filters={'id': f'eq.{c["program_id"]}'}, single=True) if c.get('program_id') else None
+            p = sb.table('programs').select(filters={'id': f'eq.{c.get("program_id")}'}, single=True) if c.get('program_id') else None
             result.append({
-                'id': c['id'], 'code': c['code'], 'title': c['title'],
+                'id': c.get('id'), 'code': c.get('code'), 'title': c.get('title'),
                 'program_name': p.get('name') if p else None, 'credits': c.get('credits')
             })
         return jsonify(result)
@@ -392,6 +392,21 @@ def manage_courses():
         'credits': data.get('credits', 3)
     })
     return jsonify({'message': 'Course created successfully'})
+
+
+@app.route('/api/admin/courses/<int:course_id>', methods=['PUT', 'DELETE'])
+@login_required
+@role_required('admin')
+def manage_course(course_id):
+    if request.method == 'PUT':
+        data = request.json
+        sb.table('courses', request.token).update(
+            {k: data[k] for k in ('code', 'title', 'description', 'credits', 'program_id') if k in data},
+            {'id': course_id}
+        )
+        return jsonify({'message': 'Course updated successfully'})
+    sb.table('courses', request.token).delete({'id': course_id})
+    return jsonify({'message': 'Course deleted successfully'})
 
 
 # ─── Instructor / Teacher ────────────────────────────────────────────
@@ -428,9 +443,9 @@ def instructor_dashboard():
     for a in (assignments or []):
         c = None
         if a.get('course_id'):
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True)
+            c = sb.table('courses').select(filters={'id': f'eq.{a.get("course_id")}'}, single=True)
         recent.append({
-            'title': a['title'],
+            'title': a.get('title'),
             'course_title': c.get('title') if c else None,
             'created_at': a.get('created_at')
         })
@@ -496,9 +511,9 @@ def instructor_assignments():
         )
         result = []
         for a in (assignments or []):
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a.get('course_id') else None
+            c = sb.table('courses').select(filters={'id': f'eq.{a.get("course_id")}'}, single=True) if a.get('course_id') else None
             result.append({
-                'id': a['id'], 'title': a['title'],
+                'id': a.get('id'), 'title': a.get('title'),
                 'course_title': c.get('title') if c else None,
                 'file_name': a.get('file_name'), 'created_at': a.get('created_at'),
                 'deadline': a.get('deadline')
