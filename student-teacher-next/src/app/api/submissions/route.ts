@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const formData = await request.formData()
-    const studentId = formData.get('student_id') as string
     const assignmentId = formData.get('assignment_id') as string
     const file = formData.get('file') as File | null
 
-    if (!studentId || !assignmentId || !file) {
+    if (!assignmentId || !file) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     const svc = createServiceClient()
 
-    const filePath = `submissions/${studentId}_${Date.now()}_${file.name}`
+    const filePath = `submissions/${user.id}_${Date.now()}_${file.name}`
 
     const { error: uploadError } = await svc.storage
       .from('submissions')
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const { error: insertError } = await svc.from('submissions').insert({
-      student_id: studentId,
+      student_id: user.id,
       assignment_id: Number(assignmentId),
       file_path: filePath,
     })
