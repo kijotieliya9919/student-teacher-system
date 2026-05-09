@@ -28,6 +28,7 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadNotifications();
         })();
         
         async function loadNotifications() {
@@ -53,8 +54,6 @@
                 `).join('');
             }
         }
-        
-        loadNotifications();
     </script>
 </body>
 </html>
