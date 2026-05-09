@@ -7,6 +7,6 @@ logs/
 *.log
 student_teacher.db
 .vercel
-
-
-.vercel
+node_modules/
+package.json
+package-lock.json
