@@ -29,10 +29,11 @@ export default function UploadForm({ classes, teacherId }: { classes: Class[]; t
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
     if (!allowed.includes(ext)) { setError('File type not allowed. Allowed: ' + allowed.join(', ')); setLoading(false); return }
 
-    const filePath = `assignments/${Date.now()}_${file.name}`
+    const fileName = `${Date.now()}_${file.name}`
+    const filePath = `assignments/${fileName}`
     const { error: uploadError } = await supabase.storage
       .from('assignments')
-      .upload(filePath, file)
+      .upload(fileName, file)
 
     if (uploadError) {
       setError('File upload failed: ' + uploadError.message)
