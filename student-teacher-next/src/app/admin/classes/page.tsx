@@ -1,18 +1,14 @@
+import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import CreateClassForm from './create-class-form'
 
 export default async function AdminClasses() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
+  const { supabase } = await requireAuth('admin')
   const svc = createServiceClient()
 
   const { data: classes } = await svc
     .from('classes')
-    .select('*, users!inner(full_name)')
+    .select('*')
     .order('name')
 
   const { data: teachers } = await svc
@@ -21,12 +17,13 @@ export default async function AdminClasses() {
     .eq('role', 'teacher')
 
   const classData = await Promise.all((classes || []).map(async (c: any) => {
+    const teacher = (teachers || []).find(t => t.id === c.teacher_id)
     const { count } = await svc
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', c.id)
       .eq('role', 'student')
-    return { ...c, studentCount: count || 0 }
+    return { ...c, teacherName: teacher?.full_name || 'Unassigned', studentCount: count || 0 }
   }))
 
   return (
@@ -54,7 +51,7 @@ export default async function AdminClasses() {
               <tr key={c.id} className="border-t">
                 <td className="p-3 font-medium">{c.name}</td>
                 <td className="p-3 text-sm text-gray-500">{c.code}</td>
-                <td className="p-3 text-sm text-gray-500">{c.users?.full_name || 'Unassigned'}</td>
+                <td className="p-3 text-sm text-gray-500">{c.teacherName}</td>
                 <td className="p-3">{c.studentCount}</td>
               </tr>
             ))}

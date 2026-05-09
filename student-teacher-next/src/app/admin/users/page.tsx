@@ -1,13 +1,9 @@
+import { requireAuth } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/server'
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import CreateUserForm from './create-user-form'
 
 export default async function AdminUsers() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
+  const { supabase } = await requireAuth('admin')
   const svc = createServiceClient()
 
   const { data: users } = await svc

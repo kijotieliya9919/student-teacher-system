@@ -1,13 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import GradeForm from './grade-form'
 
 export default async function AssignmentSubmissions({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
+  const { supabase, user } = await requireAuth('teacher')
   const assignmentId = Number(id)
 
   const { data: assignment } = await supabase
