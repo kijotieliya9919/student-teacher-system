@@ -69,7 +69,7 @@ def role_required(*allowed_roles):
 
 def _log_audit(user_id, action, details=''):
     try:
-        sb.table('audit_logs').insert({
+        _service_table('audit_logs').insert({
             'user_id': user_id, 'action': action, 'details': details
         })
     except Exception as e:
@@ -695,7 +695,7 @@ def grade_submission(submission_id):
 @role_required('teacher', 'admin')
 def delete_assignment(assignment_id):
     uid = request.user['auth_id']
-    a = sb.table('assignments').select(filters={'id': f'eq.{assignment_id}'}, single=True)
+    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{assignment_id}'}, single=True)
     if not a or a.get('instructor_id') != uid:
         return jsonify({'detail': 'Assignment not found or access denied'}), 404
 
