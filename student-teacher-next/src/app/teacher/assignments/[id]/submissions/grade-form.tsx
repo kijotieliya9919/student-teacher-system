@@ -2,26 +2,26 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 
-export default function GradeForm({ submissionId, currentGrade, currentFeedback }: {
-  submissionId: number; currentGrade?: string; currentFeedback?: string
+export default function GradeForm({ assignmentId, studentId, currentGrade, currentFeedback }: {
+  assignmentId: number; studentId: string; currentGrade?: string; currentFeedback?: string
 }) {
   const [grade, setGrade] = useState(currentGrade || '')
   const [feedback, setFeedback] = useState(currentFeedback || '')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleSubmit() {
     setSaving(true)
-    const { error } = await supabase
-      .from('submissions')
-      .update({ grade, feedback })
-      .eq('id', submissionId)
+    const res = await fetch('/api/grades', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignmentId, studentId, grade, feedback }),
+    })
 
-    if (error) {
-      alert('Failed to save grade: ' + error.message)
+    if (!res.ok) {
+      const errData = await res.json()
+      alert('Failed to save grade: ' + (errData.error || 'Unknown error'))
     } else {
       alert('Grade saved!')
       router.refresh()

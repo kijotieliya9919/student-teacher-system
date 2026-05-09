@@ -25,10 +25,14 @@ export default async function StudentAssignments() {
     assignments = a || []
 
     const { data: s } = await supabase
-      .from('submissions')
-      .select('assignment_id, grade')
-      .eq('student_id', user.id)
-    submissions = s || []
+      .from('audit_logs')
+      .select('action, details')
+      .eq('user_id', user.id)
+      .like('action', 'submission_%')
+    submissions = s?.map(log => ({
+      assignment_id: Number(log.action.replace('submission_', '')),
+      grade: null,
+    })) || []
   }
 
   const submittedMap = new Map(submissions.map(s => [s.assignment_id, s]))
