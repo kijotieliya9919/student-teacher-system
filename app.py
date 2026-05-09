@@ -718,7 +718,7 @@ def student_list_assignments():
     course_ids = [e.get('course_id') for e in (enrolled or [])]
 
     all_assignments = sb.table('assignments', _svc_key()).select(order='created_at.desc')
-    now = datetime.now()
+    now = datetime.now(datetime.UTC)
     active = []
 
     for a in (all_assignments or []):
