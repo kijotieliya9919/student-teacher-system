@@ -606,13 +606,13 @@ def get_submissions():
     if assignment_id:
         filters = {'assignment_id': f'eq.{assignment_id}'}
         submissions = sb.table('submissions', request.token).select(filters=filters)
-        return jsonify(_build_submissions_list(submissions, uid, is_submissions=True))
+        return jsonify(_build_submissions_list(submissions, uid, is_submissions=True, token=request.token))
     elif course_id:
         all_a = sb.table('assignments', request.token).select(filters={'course_id': f'eq.{course_id}'})
-        return jsonify(_build_submissions_list(all_a, uid))
+        return jsonify(_build_submissions_list(all_a, uid, token=request.token))
     else:
         all_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
-        return jsonify(_build_submissions_list(all_a, uid))
+        return jsonify(_build_submissions_list(all_a, uid, token=request.token))
 
 
 def _build_submissions_list(items, uid, is_submissions=False, token=None):
@@ -659,11 +659,11 @@ def _build_submissions_list(items, uid, is_submissions=False, token=None):
 @role_required('teacher', 'admin')
 def grade_submission(submission_id):
     uid = request.user['auth_id']
-    s = sb.table('submissions').select(filters={'id': f'eq.{submission_id}'}, single=True)
+    s = sb.table('submissions', request.token).select(filters={'id': f'eq.{submission_id}'}, single=True)
     if not s:
         return jsonify({'detail': 'Submission not found'}), 404
 
-    a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True)
+    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True)
     if not a or a.get('instructor_id') != uid:
         return jsonify({'detail': 'Access denied'}), 403
 
@@ -986,11 +986,11 @@ def export_student_data():
 @role_required('teacher', 'admin')
 def teacher_download_submission(submission_id):
     uid = request.user['auth_id']
-    s = sb.table('submissions').select(filters={'id': f'eq.{submission_id}'}, single=True)
+    s = sb.table('submissions', request.token).select(filters={'id': f'eq.{submission_id}'}, single=True)
     if not s:
         return jsonify({'detail': 'Submission not found'}), 404
 
-    a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True)
+    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True)
     if not a or a.get('instructor_id') != uid:
         return jsonify({'detail': 'Access denied'}), 403
 
