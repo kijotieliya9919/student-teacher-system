@@ -537,100 +537,30 @@ def instructor_assignments():
     enrolled = sb.table('enrollments').select(filters={
         'course_id': f'eq.{course_id}', 'status': 'eq.active'
     })
-    notified = 0
-    for enr in (enrolled or []):
-        sb.table('notifications', request.token).insert({
-            'user_id': enr['student_id'], 'subject': f'New Assignment: {title}',
-            'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
-        })
-        notified += 1
-
-    _log_audit(uid, 'upload_assignment', f'Uploaded "{title}" for course {course_name}')
-    return jsonify({'message': f'Assignment uploaded successfully. Notified {notified} students.'})
-
-
-@app.route('/api/teacher/assignments', methods=['GET', 'POST'])
-@login_required
-@role_required('teacher', 'admin')
-def teacher_assignments():
-    uid = request.user['auth_id']
-
-    if request.method == 'GET':
-        assignments = sb.table('assignments', request.token).select(
-            filters={'instructor_id': f'eq.{uid}'}, order='created_at.desc'
-        )
-        result = []
-        for a in (assignments or []):
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a.get('course_id') else None
-            result.append({
-                'id': a['id'], 'title': a['title'],
-                'class_name': c.get('title') if c else None,
-                'file_name': a.get('file_name'), 'created_at': a.get('created_at')
-            })
-        return jsonify(result)
-
-    title = request.form.get('title')
-    class_name = request.form.get('class_name')
-    description = request.form.get('description', '')
-    file = request.files.get('file')
-    deadline = request.form.get('deadline')
-
-    if not file or not title or not class_name:
-        return jsonify({'detail': 'Missing required fields'}), 400
-
-    allowed_extensions = {'.pdf', '.docx', '.xlsx', '.doc', '.xls'}
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in allowed_extensions:
-        return jsonify({'detail': 'File type not allowed'}), 400
-
-    course = sb.table('courses').select(filters={'title': f'eq.{class_name}'}, single=True)
-    if course:
-        course_id = course['id']
-    else:
-        inserted = sb.table('courses', request.token).insert({
-            'program_id': None, 'code': class_name[:10].upper(),
-            'title': class_name, 'description': ''
-        })
-        course_id = inserted[0]['id'] if isinstance(inserted, list) else inserted.get('id', inserted)
-
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    storage_path = f"{timestamp}_{file.filename}"
-    status, _ = sb.upload_file('assignments', storage_path, file.read(), content_type=file.content_type, token=request.token)
-    if status not in (200, 201):
-        return jsonify({'detail': 'Failed to upload file to storage'}), 500
-
-    file_path = f"assignments/{storage_path}"
-    sb.table('assignments', request.token).insert({
-        'course_id': course_id, 'title': title, 'description': description,
-        'file_path': file_path, 'file_name': file.filename, 'file_type': ext,
-        'instructor_id': uid, 'deadline': deadline or None
-    })
-
-    enrolled = sb.table('enrollments').select(filters={
-        'course_id': f'eq.{course_id}', 'status': 'eq.active'
-    })
     by_class = _service_table('users').select(filters={
-        'role': 'eq.student', 'is_active': 'eq.true', 'class_name': f'eq.{class_name}'
+        'role': 'eq.student', 'is_active': 'eq.true', 'class_name': f'eq.{course_name}'
     })
 
     notified = set()
     for enr in (enrolled or []):
-        notified.add(enr['student_id'])
-        sb.table('notifications', request.token).insert({
-            'user_id': enr['student_id'], 'subject': f'New Assignment: {title}',
-            'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
-        })
-
-    for stu in (by_class or []):
-        sid = stu['id']
-        if sid not in notified:
+        sid = enr.get('student_id')
+        if sid:
             notified.add(sid)
             sb.table('notifications', request.token).insert({
                 'user_id': sid, 'subject': f'New Assignment: {title}',
                 'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
             })
 
-    _log_audit(uid, 'upload_assignment', f'Uploaded "{title}" for class {class_name}')
+    for stu in (by_class or []):
+        sid = stu.get('id')
+        if sid and sid not in notified:
+            notified.add(sid)
+            sb.table('notifications', request.token).insert({
+                'user_id': sid, 'subject': f'New Assignment: {title}',
+                'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
+            })
+
+    _log_audit(uid, 'upload_assignment', f'Uploaded "{title}" for course {course_name}')
     return jsonify({'message': f'Assignment uploaded successfully. Notified {len(notified)} students.'})
 
 

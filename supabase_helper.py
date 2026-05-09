@@ -52,7 +52,9 @@ def get_user(token):
 
 def admin_create_user(email, password, user_metadata):
     """Uses service_role key — for seeding only. Requires SUPABASE_SERVICE_KEY env var."""
-    key = os.getenv('SUPABASE_SERVICE_KEY', SUPABASE_ANON_KEY)
+    key = os.getenv('SUPABASE_SERVICE_KEY')
+    if not key:
+        raise ValueError('SUPABASE_SERVICE_KEY is not set — cannot create admin users')
     r = requests.post(
         f'{SUPABASE_URL}/auth/v1/admin/users',
         json={'email': email, 'password': password, 'email_confirm': True, 'user_metadata': user_metadata},
@@ -119,7 +121,7 @@ class Table:
         if r.status_code == 200:
             try:
                 return len(r.json())
-            except:
+            except Exception:
                 pass
         return 0
 
