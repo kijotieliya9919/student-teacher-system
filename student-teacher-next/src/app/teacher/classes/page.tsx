@@ -6,20 +6,23 @@ export default async function TeacherClasses() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('*')
-    .eq('teacher_id', user.id)
-    .order('name')
+  const { data: profile } = await supabase
+    .from('users')
+    .select('class_id')
+    .eq('id', user.id)
+    .single()
 
-  const { data: allClasses } = await supabase
-    .from('classes')
-    .select('*, users!inner(full_name)')
-    .eq('users.role', 'student')
-    .order('name')
+  let classes: any[] = []
+  if (profile?.class_id) {
+    const { data: c } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('id', profile.class_id)
+    classes = c || []
+  }
 
   const classStudentCounts: Record<number, number> = {}
-  for (const c of allClasses || []) {
+  for (const c of classes) {
     const { count } = await supabase
       .from('users')
       .select('*', { count: 'exact', head: true })
@@ -32,7 +35,7 @@ export default async function TeacherClasses() {
     <div>
       <h1 className="text-2xl font-bold text-green-800 mb-6">My Classes</h1>
 
-      {!classes || classes.length === 0 ? (
+      {classes.length === 0 ? (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded">
           You have no classes assigned. Contact an administrator.
         </div>

@@ -7,11 +7,20 @@ export default async function NewAssignment() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('*')
-    .eq('teacher_id', user.id)
-    .order('name')
+  const { data: profile } = await supabase
+    .from('users')
+    .select('class_id')
+    .eq('id', user.id)
+    .single()
+
+  let classes: any[] = []
+  if (profile?.class_id) {
+    const { data: c } = await supabase
+      .from('classes')
+      .select('*')
+      .eq('id', profile.class_id)
+    classes = c || []
+  }
 
   return (
     <div>
