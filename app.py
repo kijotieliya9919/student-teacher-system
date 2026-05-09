@@ -505,14 +505,21 @@ def instructor_assignments():
         return jsonify({'detail': 'File type not allowed'}), 400
 
     course = sb.table('courses').select(filters={'title': f'eq.{course_name}'}, single=True)
-    if course:
+    if course and course.get('id'):
         course_id = course['id']
     else:
         inserted = sb.table('courses', request.token).insert({
             'program_id': None, 'code': course_name[:10].upper(),
             'title': course_name, 'description': ''
         })
-        course_id = inserted[0]['id'] if isinstance(inserted, list) else inserted.get('id', inserted)
+        if isinstance(inserted, list) and inserted:
+            course_id = inserted[0].get('id')
+        elif isinstance(inserted, dict):
+            course_id = inserted.get('id')
+        else:
+            course_id = None
+        if not course_id:
+            return jsonify({'detail': 'Failed to create course'}), 500
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     storage_path = f"{timestamp}_{file.filename}"
@@ -651,13 +658,16 @@ def _build_submissions_list(items, uid, is_submissions=False):
     result = []
     if is_submissions:
         for s in (items or []):
-            a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True) if s.get('assignment_id') else None
+            aid = s.get('assignment_id')
+            a = sb.table('assignments').select(filters={'id': f'eq.{aid}'}, single=True) if aid else None
             if a and a.get('instructor_id') != uid:
                 continue
-            u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a and a.get('course_id') else None
+            sid = s.get('student_id')
+            u = _service_table('users').select(filters={'id': f'eq.{sid}'}, single=True) if sid else None
+            cid = a.get('course_id') if a else None
+            c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
             result.append({
-                'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
+                'id': s.get('id'), 'student_name': u.get('full_name') if u else 'Unknown',
                 'assignment_title': a.get('title') if a else 'Unknown',
                 'course_title': c.get('title') if c else None,
                 'grade': s.get('grade'), 'feedback': s.get('feedback'),
@@ -667,12 +677,14 @@ def _build_submissions_list(items, uid, is_submissions=False):
         for a in (items or []):
             if a.get('instructor_id') != uid:
                 continue
-            subs = sb.table('submissions').select(filters={'assignment_id': f'eq.{a["id"]}'})
+            subs = sb.table('submissions').select(filters={'assignment_id': f'eq.{a.get("id")}'})
             for s in (subs or []):
-                u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
-                c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a.get('course_id') else None
+                sid = s.get('student_id')
+                u = _service_table('users').select(filters={'id': f'eq.{sid}'}, single=True) if sid else None
+                cid = a.get('course_id')
+                c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
                 result.append({
-                    'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
+                    'id': s.get('id'), 'student_name': u.get('full_name') if u else 'Unknown',
                     'assignment_title': a.get('title'),
                     'course_title': c.get('title') if c else None,
                     'grade': s.get('grade'), 'feedback': s.get('feedback'),
@@ -862,9 +874,7 @@ def submit_assignment(assignment_id):
     if not enrolled:
         c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
         if not c or c.get('title') != student_class:
-            all_enrollments = sb.table('enrollments').count()
-            if all_enrollments > 0:
-                return jsonify({'detail': 'Not enrolled in this course'}), 403
+            return jsonify({'detail': 'Not enrolled in this course'}), 403
 
     if a.get('deadline'):
         try:
@@ -928,18 +938,15 @@ def student_progress():
 
     total = 0
     if student_class:
-        total = sb.table('assignments').count()
-        # count assignments matching student's class
         all_a = sb.table('assignments').select()
-        total = 0
         for a in (all_a or []):
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a.get('course_id') else None
+            cid = a.get('course_id')
+            c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
             if c and c.get('title') == student_class:
                 total += 1
 
-    submitted = sb.table('submissions').count(filters={'student_id': f'eq.{uid}'})
-    graded = sb.table('submissions').count(filters={'student_id': f'eq.{uid}'})
     all_subs = sb.table('submissions').select(filters={'student_id': f'eq.{uid}'})
+    submitted = len(all_subs or [])
     graded = 0
     for s in (all_subs or []):
         if s.get('grade'):
@@ -989,7 +996,7 @@ def enroll_course():
         'student_id': f'eq.{uid}', 'course_id': f'eq.{course_id}'
     }, single=True)
     if existing:
-        return jsonify({'error': 'Already enrolled in this course'}), 400
+        return jsonify({'detail': 'Already enrolled in this course'}), 400
 
     sb.table('enrollments', request.token).insert({
         'student_id': uid, 'course_id': course_id, 'status': 'active'
@@ -1042,7 +1049,6 @@ def notifications_redirect():
 def export_student_data():
     uid = request.user['auth_id']
     user = request.user
-    assignments = sb.table('assignments').select()
     submissions = sb.table('submissions').select(filters={'student_id': f'eq.{uid}'})
     notifications = sb.table('notifications').select(filters={'user_id': f'eq.{uid}'})
 
@@ -1051,7 +1057,6 @@ def export_student_data():
             'email': user.get('email'), 'full_name': user.get('full_name'),
             'role': user.get('role'), 'created_at': user.get('created_at')
         },
-        'assignments': assignments or [],
         'submissions': submissions or [],
         'notifications': notifications or []
     })
