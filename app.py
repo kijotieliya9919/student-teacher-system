@@ -1,11 +1,13 @@
 import os
+import sys
 import json
 import logging
 from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
 
-load_dotenv()
+if os.path.exists('.env'):
+    load_dotenv()
 
 from flask import Flask, request, jsonify, redirect
 from flask_cors import CORS
@@ -14,16 +16,20 @@ import supabase_helper as sb
 app = Flask(__name__, static_folder='frontend')
 CORS(app)
 
-LOG_DIR = os.getenv('LOG_DIR', './logs')
+on_vercel = os.environ.get('VERCEL')
+LOG_DIR = os.getenv('LOG_DIR', '/tmp/logs' if on_vercel else './logs')
 os.makedirs(LOG_DIR, exist_ok=True)
+
+handlers = [logging.StreamHandler(sys.stdout)]
+try:
+    handlers.append(logging.FileHandler(f'{LOG_DIR}/app.log'))
+except (OSError, PermissionError):
+    pass
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(f'{LOG_DIR}/app.log'),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 
 
