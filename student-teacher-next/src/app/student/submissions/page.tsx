@@ -63,7 +63,7 @@ export default async function StudentSubmissions() {
               {submissionLogs.map(s => {
                 const assignmentId = Number(s.action.replace('submission_', ''))
                 const assignment = assignmentsMap.get(assignmentId)
-                const gradeInfo = gradeMap.get(`grade_${assignmentId}_${user.id}`) || {}
+                const gradeInfo = gradeMap.get(`grade_${assignmentId}_${user.id}`) || { grade: '', feedback: '' }
                 return (
                   <tr key={s.id} className="border-t">
                     <td className="p-3">{assignment?.title || 'Unknown'}</td>

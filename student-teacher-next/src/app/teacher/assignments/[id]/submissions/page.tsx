@@ -67,7 +67,7 @@ export default async function AssignmentSubmissions({ params }: { params: Promis
             <tbody>
               {logsList.map(s => {
                 const studentId = s.user_id
-                const gradeInfo = gradeMap.get(studentId) || {}
+                const gradeInfo = gradeMap.get(studentId) || { grade: '', feedback: '' }
                 return (
                   <tr key={s.id} className="border-t">
                     <td className="p-3">{s.users?.full_name || 'Unknown'}</td>
