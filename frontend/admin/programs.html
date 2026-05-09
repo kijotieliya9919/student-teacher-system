@@ -165,7 +165,7 @@
                                 <button class="btn btn-sm btn-warning" onclick="editProgram(${p.id})">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteProgram(${p.id})">
+                                <button class="btn btn-sm btn-danger" onclick="deleteProgram(${p.id}, '${p.name}')">
                                     <i class="fas fa-trash"></i> Delete
                                 </button>
                             </div>
@@ -186,13 +186,13 @@
                     <tr>
                         <td>${c.code}</td>
                         <td>${c.title}</td>
-                        <td>${programs.find(p => p.id === c.program_id)?.name || 'N/A'}</td>
+                        <td>${c.program_name || 'N/A'}</td>
                         <td>${c.credits}</td>
                         <td>
                             <button class="btn btn-sm btn-warning" onclick="editCourse(${c.id})">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id})">
+                            <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id}, '${c.title}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -232,6 +232,55 @@
                     headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
                     body: JSON.stringify({program_id: parseInt(programId), code, title, description: desc, credits: parseInt(credits)})
                 }).then(() => loadCourses());
+            }
+        }
+
+        async function editProgram(id) {
+            const name = prompt('New Program Name:');
+            const code = prompt('New Program Code:');
+            const dept = prompt('New Department:');
+            const duration = prompt('Duration (months):', '12');
+            if (name && code) {
+                await fetch(`/api/admin/programs/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                    body: JSON.stringify({name, code, department: dept, duration_months: parseInt(duration)})
+                });
+                loadPrograms();
+            }
+        }
+
+        async function deleteProgram(id, name) {
+            if (confirm(`Delete program "${name}"? This cannot be undone.`)) {
+                await fetch(`/api/admin/programs/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                loadPrograms();
+            }
+        }
+
+        async function editCourse(id) {
+            const code = prompt('New Course Code:');
+            const title = prompt('New Course Title:');
+            const credits = prompt('Credits:', '3');
+            if (code && title) {
+                await fetch(`/api/admin/courses/${id}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                    body: JSON.stringify({code, title, credits: parseInt(credits)})
+                });
+                loadCourses();
+            }
+        }
+
+        async function deleteCourse(id, title) {
+            if (confirm(`Delete course "${title}"? This cannot be undone.`)) {
+                await fetch(`/api/admin/courses/${id}`, {
+                    method: 'DELETE',
+                    headers: {'Authorization': `Bearer ${token}`}
+                });
+                loadCourses();
             }
         }
 

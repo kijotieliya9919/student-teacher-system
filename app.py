@@ -355,6 +355,21 @@ def manage_programs():
     return jsonify({'message': 'Program created successfully'})
 
 
+@app.route('/api/admin/programs/<int:program_id>', methods=['PUT', 'DELETE'])
+@login_required
+@role_required('admin')
+def manage_program(program_id):
+    if request.method == 'PUT':
+        data = request.json
+        sb.table('programs', request.token).update(
+            {k: data[k] for k in ('name', 'code', 'department', 'duration_months') if k in data},
+            {'id': program_id}
+        )
+        return jsonify({'message': 'Program updated successfully'})
+    sb.table('programs', request.token).delete({'id': program_id})
+    return jsonify({'message': 'Program deleted successfully'})
+
+
 @app.route('/api/admin/courses', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')

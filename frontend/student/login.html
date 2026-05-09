@@ -49,7 +49,7 @@
             try {
                 const result = await login(email, password, 'student');
                 if (result.must_change_password) {
-                    window.location.href = '/admin/change-password.html';
+                    window.location.href = '/admin/change-password.html?role=student';
                 } else {
                     window.location.href = '/student/dashboard.html';
                 }
