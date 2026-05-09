@@ -102,7 +102,7 @@
             try {
                 const result = await login(email, password, 'teacher');
                 if (result.must_change_password) {
-                    window.location.href = '/admin/change-password.html';
+                    window.location.href = '/admin/change-password.html?role=teacher';
                 } else {
                     window.location.href = '/instructor/dashboard.html';
                 }

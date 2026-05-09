@@ -623,27 +623,6 @@ def _build_submissions_list(items, uid, is_submissions=False):
     return result
 
 
-@app.route('/api/teacher/submissions/<int:assignment_id>', methods=['GET'])
-@login_required
-@role_required('teacher', 'admin')
-def teacher_view_submissions(assignment_id):
-    uid = request.user['auth_id']
-    a = sb.table('assignments').select(filters={'id': f'eq.{assignment_id}'}, single=True)
-    if not a or a.get('instructor_id') != uid:
-        return jsonify({'detail': 'Assignment not found or access denied'}), 404
-
-    submissions = sb.table('submissions').select(filters={'assignment_id': f'eq.{assignment_id}'})
-    result = []
-    for s in (submissions or []):
-        u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
-        result.append({
-            'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
-            'grade': s.get('grade'), 'feedback': s.get('feedback'),
-            'submitted_at': s.get('submitted_at')
-        })
-    return jsonify(result)
-
-
 @app.route('/api/instructor/submissions/<int:submission_id>/grade', methods=['POST'])
 @login_required
 @role_required('teacher', 'admin')
@@ -674,32 +653,9 @@ def grade_submission(submission_id):
     return jsonify({'message': 'Grade submitted successfully'})
 
 
-@app.route('/api/teacher/submissions/<int:submission_id>/grade', methods=['POST'])
-@login_required
-@role_required('teacher', 'admin')
-def teacher_grade_submission(submission_id):
-    return grade_submission(submission_id)
-
-
-@app.route('/api/teacher/students', methods=['GET'])
-@login_required
-@role_required('teacher', 'admin')
-def teacher_list_students():
-    class_name = request.args.get('class_name', '')
-    filters = {'role': 'eq.student'}
-    if class_name:
-        filters['class_name'] = f'eq.{class_name}'
-    students = _service_table('users').select(filters=filters)
-    return jsonify([{
-        'id': s['id'], 'email': s['email'],
-        'full_name': s['full_name'], 'class_name': s.get('class_name')
-    } for s in (students or [])])
-
-
 # ─── Assignment delete ────────────────────────────────────────────────
 
 @app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])
-@app.route('/api/teacher/assignments/<int:assignment_id>', methods=['DELETE'])
 @login_required
 @role_required('teacher', 'admin')
 def delete_assignment(assignment_id):
