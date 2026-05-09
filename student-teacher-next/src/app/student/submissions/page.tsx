@@ -1,9 +1,9 @@
 import { requireAuth } from '@/lib/auth'
 
 export default async function StudentSubmissions() {
-  const { supabase, user } = await requireAuth('student')
+  const { svc, userId } = await requireAuth('student')
 
-  const { data: logs } = await supabase
+  const { data: logs } = await svc
     .from('audit_logs')
     .select('*')
     .eq('user_id', user.id)
@@ -16,7 +16,7 @@ export default async function StudentSubmissions() {
 
   const assignmentsMap = new Map<number, any>()
   if (assignmentIds.length > 0) {
-    const { data: assignments } = await supabase
+    const { data: assignments } = await svc
       .from('assignments_new')
       .select('id, title')
       .in('id', assignmentIds)
@@ -26,7 +26,7 @@ export default async function StudentSubmissions() {
   }
 
   const gradeMap = new Map<string, { grade: string; feedback: string }>()
-  const { data: gradeLogs } = await supabase
+  const { data: gradeLogs } = await svc
     .from('audit_logs')
     .select('*')
     .eq('user_id', user.id)

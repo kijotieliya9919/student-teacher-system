@@ -2,26 +2,26 @@ import { requireAuth } from '@/lib/auth'
 import SubmitButton from './submit-button'
 
 export default async function StudentAssignments() {
-  const { supabase, user } = await requireAuth('student')
+  const { svc, userId } = await requireAuth('student')
 
-  const { data: profile } = await supabase
+  const { data: profile } = await svc
     .from('users')
     .select('class_id')
-    .eq('id', user.id)
+    .eq('id', userId)
     .single()
 
   let assignments: any[] = []
   let submissions: any[] = []
 
   if (profile?.class_id) {
-    const { data: a } = await supabase
+    const { data: a } = await svc
       .from('assignments_new')
       .select('*')
       .eq('class_id', profile.class_id)
       .order('created_at', { ascending: false })
     assignments = a || []
 
-    const { data: s } = await supabase
+    const { data: s } = await svc
       .from('audit_logs')
       .select('action, details')
       .eq('user_id', user.id)
