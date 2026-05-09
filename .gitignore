@@ -5,3 +5,6 @@ __pycache__/
 uploads/
 logs/
 *.log
+student_teacher.db
+.vercel
+
