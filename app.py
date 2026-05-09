@@ -1084,28 +1084,26 @@ def seed_users():
             status, data = sb.admin_create_user(email, pw, {'role': role, 'full_name': name})
             if status in (200, 201):
                 uid = data.get('id')
-                if uid:
+            elif 'already exists' in str(data).lower() or 'email_exists' in str(data).lower():
+                auth_status, auth_data = sb.sign_in(email, pw)
+                if auth_status == 200:
+                    uid = auth_data.get('user', {}).get('id')
+                else:
+                    errors.append(f'{email}: auth user exists but cannot sign in')
+                    continue
+            else:
+                errors.append(f'{email}: {str(data)[:200]}')
+                continue
+            if uid:
+                existing_user = sb.table('users').select(filters={'id': f'eq.{uid}'})
+                if existing_user:
+                    skipped.append(email)
+                else:
                     profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
                     if class_name:
                         profile['class_name'] = class_name
                     sb.table('users').insert(profile)
                     seeded.append(email)
-            elif 'already exists' in str(data).lower():
-                uid = data.get('id')
-                if uid:
-                    existing_user = sb.table('users').select(filters={'id': f'eq.{uid}'})
-                    if not existing_user:
-                        profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
-                        if class_name:
-                            profile['class_name'] = class_name
-                        sb.table('users').insert(profile)
-                        seeded.append(f'{email} (profile created)')
-                    else:
-                        skipped.append(email)
-                else:
-                    skipped.append(email)
-            else:
-                errors.append(f'{email}: {str(data)[:200]}')
         except Exception as e:
             errors.append(f'{email}: {str(e)[:200]}')
     _seeded = True
