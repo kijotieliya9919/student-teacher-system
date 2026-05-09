@@ -12,7 +12,7 @@ export default async function StudentSubmissions() {
 
   const submissionLogs = logs || []
 
-  const assignmentIds = [...new Set(submissionLogs.map(l => Number(l.action.replace('submission_', ''))))]
+  const assignmentIds = [...new Set(submissionLogs.map((l: any) => Number(l.action.replace('submission_', ''))))]
 
   const assignmentsMap = new Map<number, any>()
   if (assignmentIds.length > 0) {
@@ -21,7 +21,7 @@ export default async function StudentSubmissions() {
       .select('id, title')
       .in('id', assignmentIds)
     if (assignments) {
-      assignments.forEach(a => assignmentsMap.set(a.id, a))
+      assignments.forEach((a: any) => assignmentsMap.set(a.id, a))
     }
   }
 
@@ -57,7 +57,7 @@ export default async function StudentSubmissions() {
               </tr>
             </thead>
             <tbody>
-              {submissionLogs.map(s => {
+              {submissionLogs.map((s: any) => {
                 const assignmentId = Number(s.action.replace('submission_', ''))
                 const assignment = assignmentsMap.get(assignmentId)
                 const gradeInfo = gradeMap.get(`grade_${assignmentId}_${userId}`) || { grade: '', feedback: '' }
