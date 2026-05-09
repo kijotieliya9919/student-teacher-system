@@ -79,6 +79,12 @@ def _make_public_url(bucket, path):
     return sb.get_public_url(bucket, path)
 
 
+def _svc_key():
+    return os.environ.get('SUPABASE_SERVICE_KEY', '')
+
+
+def _service_table(name):
+    return sb.table(name, _svc_key())
 
 
 
@@ -156,7 +162,7 @@ def register():
         if progs:
             program_id = progs[0]['id'] if isinstance(progs, list) else progs['id']
 
-    sb.table('users').insert({
+    _service_table('users').insert({
         'id': auth_id, 'email': email, 'full_name': full_name,
         'role': role, 'program_id': program_id
     })
@@ -268,7 +274,7 @@ def manage_users():
         return jsonify({'detail': f'Failed to create auth user: {str(auth_data)[:200]}'}), 400
 
     if auth_id:
-        sb.table('users', request.token).insert({
+        _service_table('users').insert({
             'id': auth_id, 'email': email, 'full_name': full_name,
             'role': role, 'class_name': class_name
         })
@@ -285,13 +291,13 @@ def manage_user(user_id):
         data = request.json
         is_active = data.get('is_active')
         if is_active is not None:
-            sb.table('users', request.token).update(
+            _service_table('users').update(
                 {'is_active': bool(is_active)},
                 {'id': user_id}
             )
         return jsonify({'message': 'User updated successfully'})
 
-    sb.table('users', request.token).delete({'id': user_id})
+    _service_table('users').delete({'id': user_id})
     _log_audit(request.user['auth_id'], 'delete_user', f'Deleted user {user_id}')
     return jsonify({'message': 'User deleted successfully'})
 
