@@ -593,7 +593,7 @@ def instructor_assignments():
             })
 
     if notifications:
-        sb.table('notifications', request.token).insert(notifications)
+        sb.table('notifications', _svc_key()).insert(notifications)
 
     _log_audit(uid, 'upload_assignment', f'Uploaded "{title}" for course {course_name}')
     return jsonify({'message': f'Assignment uploaded successfully. Notified {len(notifications)} students.'})
@@ -680,7 +680,7 @@ def grade_submission(submission_id):
         {'id': submission_id}
     )
 
-    sb.table('notifications', request.token).insert({
+    sb.table('notifications', _svc_key()).insert({
         'user_id': s['student_id'], 'subject': f'Grade Received: {a.get("title")}',
         'message': f'You received grade: {grade}. Feedback: {feedback or "No feedback"}'
     })
@@ -823,7 +823,7 @@ def submit_assignment(assignment_id):
 
     instructor_id = a.get('instructor_id')
     if instructor_id:
-        sb.table('notifications', request.token).insert({
+        sb.table('notifications', _svc_key()).insert({
             'user_id': instructor_id, 'subject': f"New Submission: {request.user.get('full_name')}",
             'message': f"Student {request.user.get('full_name')} submitted assignment: {a.get('title')}"
         })
