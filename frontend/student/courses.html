@@ -51,6 +51,7 @@
         (async () => {
             const sb = await requireAuth();
             token = (await sb.auth.getSession()).data.session?.access_token;
+            loadData();
         })();
         
         async function loadData() {
@@ -74,8 +75,6 @@
                     : '<p class="text-muted mb-0">You are not enrolled in any courses yet.</p>';
             }
         }
-        
-        loadData();
     </script>
 </body>
 </html>
