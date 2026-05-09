@@ -32,16 +32,15 @@ export default function SubmitButton({ assignmentId, fileName }: { assignmentId:
         return
       }
 
-      const { error: insertError } = await supabase
-        .from('submissions')
-        .insert({
-          student_id: user.id,
-          assignment_id: assignmentId,
-          file_path: filePath,
-        })
+      const res = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: user.id, assignment_id: assignmentId, file_path: filePath }),
+      })
 
-      if (insertError) {
-        alert('Submission failed: ' + insertError.message)
+      if (!res.ok) {
+        const errData = await res.json()
+        alert('Submission failed: ' + (errData.error || 'Unknown error'))
       } else {
         alert('Assignment submitted successfully!')
         router.refresh()
