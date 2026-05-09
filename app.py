@@ -166,10 +166,12 @@ def register():
         if progs:
             program_id = progs[0]['id'] if isinstance(progs, list) else progs['id']
 
-    _service_table('users').insert({
+    result = _service_table('users').insert({
         'id': auth_id, 'email': email, 'full_name': full_name,
         'role': role, 'program_id': program_id
     })
+    if isinstance(result, dict) and 'error' in result:
+        logging.warning(f'Register insert failed: {result}')
 
     logging.info(f'New user registered: {email} with role {role}')
     _log_audit(auth_id, 'register', f'{role} registered')
@@ -278,10 +280,12 @@ def manage_users():
         return jsonify({'detail': f'Failed to create auth user: {str(auth_data)[:200]}'}), 400
 
     if auth_id:
-        _service_table('users').insert({
+        result = _service_table('users').insert({
             'id': auth_id, 'email': email, 'full_name': full_name,
             'role': role, 'class_name': class_name
         })
+        if isinstance(result, dict) and 'error' in result:
+            logging.warning(f'Insert user profile failed: {result}')
 
     _log_audit(request.user['auth_id'], 'create_user', f'Created {role}: {email}')
     return jsonify({'message': 'User created successfully'})

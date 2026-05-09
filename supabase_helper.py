@@ -87,7 +87,11 @@ class Table:
         r = requests.post(self.url, headers=self.headers, json=data)
         if r.status_code == 201:
             return r.json()
-        return r.json() if r.text else {}
+        body = r.json() if r.text else {}
+        if 'error' in body or r.status_code >= 400:
+            import logging
+            logging.warning(f'INSERT {self.name} failed: status={r.status_code}, body={str(body)[:200]}')
+        return body
     
     def update(self, data, filters):
         params = {}
