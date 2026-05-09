@@ -223,8 +223,8 @@ def get_programs_public():
 @login_required
 @role_required('admin')
 def admin_dashboard():
-    students = sb.table('users').count(filters={'role': 'eq.student'})
-    teachers = sb.table('users').count(filters={'role': 'eq.teacher'})
+    students = _service_table('users').count(filters={'role': 'eq.student'})
+    teachers = _service_table('users').count(filters={'role': 'eq.teacher'})
     courses = sb.table('courses').count()
     assignments = sb.table('assignments').count()
     submissions = sb.table('submissions').count()
@@ -1107,14 +1107,14 @@ def seed_users():
                 errors.append(f'{email}: {str(data)[:200]}')
                 continue
             if uid:
-                existing_user = sb.table('users').select(filters={'id': f'eq.{uid}'})
+                existing_user = _service_table('users').select(filters={'id': f'eq.{uid}'})
                 if existing_user:
                     skipped.append(email)
                 else:
                     profile = {'id': uid, 'email': email, 'full_name': name, 'role': role}
                     if class_name:
                         profile['class_name'] = class_name
-                    sb.table('users').insert(profile)
+                    _service_table('users').insert(profile)
                     seeded.append(email)
         except Exception as e:
             errors.append(f'{email}: {str(e)[:200]}')
