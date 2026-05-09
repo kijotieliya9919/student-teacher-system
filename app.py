@@ -192,11 +192,19 @@ def change_password():
     if status != 200:
         return jsonify({'detail': 'Invalid old password'}), 400
 
+    r = requests.post(
+        f'{sb.SUPABASE_URL}/auth/v1/user',
+        headers={'Authorization': f'Bearer {request.token}'},
+        json={'password': new_password}
+    )
+    if r.status_code not in (200, 201):
+        return jsonify({'detail': 'Password change failed. Try using "Forgot Password" flow.'}), 400
+
     sb.table('users', request.token).update(
         {'must_change_password': False},
         {'id': request.user['auth_id']}
     )
-    return jsonify({'message': 'Password change must be done via Supabase. Use "Forgot Password" flow.'})
+    return jsonify({'message': 'Password changed successfully'})
 
 
 @app.route('/api/auth/me', methods=['GET'])
@@ -252,8 +260,8 @@ def manage_users():
         filters = {'role': f'eq.{role}'} if role else None
         users = _service_table('users').select(filters=filters)
         return jsonify([{
-            'id': u['id'], 'email': u['email'], 'full_name': u['full_name'],
-            'role': u['role'], 'is_active': bool(u.get('is_active', True)),
+            'id': u.get('id'), 'email': u.get('email'), 'full_name': u.get('full_name'),
+            'role': u.get('role'), 'is_active': bool(u.get('is_active', True)),
             'class_name': u.get('class_name')
         } for u in (users or [])])
 
@@ -279,13 +287,15 @@ def manage_users():
     else:
         return jsonify({'detail': f'Failed to create auth user: {str(auth_data)[:200]}'}), 400
 
-    if auth_id:
-        result = _service_table('users').insert({
-            'id': auth_id, 'email': email, 'full_name': full_name,
-            'role': role, 'class_name': class_name
-        })
-        if isinstance(result, dict) and 'error' in result:
-            logging.warning(f'Insert user profile failed: {result}')
+    if not auth_id:
+        return jsonify({'detail': 'User created in auth but no ID returned. Contact support.'}), 500
+
+    result = _service_table('users').insert({
+        'id': auth_id, 'email': email, 'full_name': full_name,
+        'role': role, 'class_name': class_name
+    })
+    if isinstance(result, dict) and 'error' in result:
+        logging.warning(f'Insert user profile failed: {result}')
 
     _log_audit(request.user['auth_id'], 'create_user', f'Created {role}: {email}')
     return jsonify({'message': 'User created successfully'})
@@ -625,18 +635,16 @@ def get_submissions():
     assignment_id = request.args.get('assignment_id')
     course_id = request.args.get('course_id')
 
-    filters = {}
     if assignment_id:
-        filters['assignment_id'] = f'eq.{assignment_id}'
+        filters = {'assignment_id': f'eq.{assignment_id}'}
+        submissions = sb.table('submissions').select(filters=filters)
+        return jsonify(_build_submissions_list(submissions, uid, is_submissions=True))
     elif course_id:
-        filters2 = {}
         all_a = sb.table('assignments').select(filters={'course_id': f'eq.{course_id}'})
         return jsonify(_build_submissions_list(all_a, uid))
     else:
         all_a = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'})
-
-    submissions = sb.table('submissions').select(filters=filters) if filters else []
-    return jsonify(_build_submissions_list(submissions, uid, is_submissions=True))
+        return jsonify(_build_submissions_list(all_a, uid))
 
 
 def _build_submissions_list(items, uid, is_submissions=False):
