@@ -241,8 +241,8 @@ def admin_dashboard():
     students = _service_table('users').count(filters={'role': 'eq.student'})
     teachers = _service_table('users').count(filters={'role': 'eq.teacher'})
     courses = sb.table('courses').count()
-    assignments = sb.table('assignments').count()
-    submissions = sb.table('submissions').count()
+    assignments = sb.table('assignments', request.token).count()
+    submissions = sb.table('submissions', request.token).count()
     return jsonify({
         'total_students': students,
         'total_teachers': teachers,
@@ -325,13 +325,13 @@ def manage_user(user_id):
 @login_required
 @role_required('admin')
 def get_audit_logs():
-    logs = sb.table('audit_logs').select(order='timestamp.desc', limit=500)
+    logs = sb.table('audit_logs', request.token).select(order='timestamp.desc', limit=500)
     result = []
     for log in (logs or []):
-        u = _service_table('users').select(filters={'id': f'eq.{log["user_id"]}'}, single=True)
+        u = _service_table('users').select(filters={'id': f'eq.{log.get("user_id")}'}, single=True)
         result.append({
-            'id': log['id'], 'timestamp': log.get('timestamp'),
-            'action': log['action'], 'details': log.get('details'),
+            'id': log.get('id'), 'timestamp': log.get('timestamp'),
+            'action': log.get('action'), 'details': log.get('details'),
             'user_email': u.get('email') if u else None
         })
     return jsonify(result)
@@ -432,7 +432,7 @@ def instructor_dashboard():
 
     # Count pending submissions (ungraded) for this teacher's assignments
     pending = 0
-    all_a = sb.table('assignments').select(filters={'instructor_id': f'eq.{uid}'})
+    all_a = sb.table('assignments', request.token).select(filters={'instructor_id': f'eq.{uid}'})
     for a in (all_a or []):
         subs = sb.table('submissions', request.token).count(filters={
             'assignment_id': f'eq.{a["id"]}',
@@ -572,27 +572,31 @@ def instructor_assignments():
         'role': 'eq.student', 'is_active': 'eq.true', 'class_name': f'eq.{course_name}'
     })
 
-    notified = set()
+    notifications = []
+    seen = set()
     for enr in (enrolled or []):
         sid = enr.get('student_id')
-        if sid:
-            notified.add(sid)
-            sb.table('notifications', request.token).insert({
+        if sid and sid not in seen:
+            seen.add(sid)
+            notifications.append({
                 'user_id': sid, 'subject': f'New Assignment: {title}',
                 'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
             })
 
     for stu in (by_class or []):
         sid = stu.get('id')
-        if sid and sid not in notified:
-            notified.add(sid)
-            sb.table('notifications', request.token).insert({
+        if sid and sid not in seen:
+            seen.add(sid)
+            notifications.append({
                 'user_id': sid, 'subject': f'New Assignment: {title}',
                 'message': f'A new assignment "{title}" has been posted. Submit before: {deadline or "No deadline"}'
             })
 
+    if notifications:
+        sb.table('notifications', request.token).insert(notifications)
+
     _log_audit(uid, 'upload_assignment', f'Uploaded "{title}" for course {course_name}')
-    return jsonify({'message': f'Assignment uploaded successfully. Notified {len(notified)} students.'})
+    return jsonify({'message': f'Assignment uploaded successfully. Notified {len(notifications)} students.'})
 
 
 @app.route('/api/instructor/submissions', methods=['GET'])
