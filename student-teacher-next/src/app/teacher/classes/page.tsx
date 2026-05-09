@@ -1,9 +1,9 @@
 import { requireAuth } from '@/lib/auth'
 
 export default async function TeacherClasses() {
-  const { supabase, user } = await requireAuth('teacher')
+  const { svc, userId } = await requireAuth('teacher')
 
-  const { data: profile } = await supabase
+  const { data: profile } = await svc
     .from('users')
     .select('class_id')
     .eq('id', user.id)
@@ -11,7 +11,7 @@ export default async function TeacherClasses() {
 
   let classes: any[] = []
   if (profile?.class_id) {
-    const { data: c } = await supabase
+    const { data: c } = await svc
       .from('classes')
       .select('*')
       .eq('id', profile.class_id)
@@ -20,7 +20,7 @@ export default async function TeacherClasses() {
 
   const classStudentCounts: Record<number, number> = {}
   for (const c of classes) {
-    const { count } = await supabase
+    const { count } = await svc
       .from('users')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', c.id)

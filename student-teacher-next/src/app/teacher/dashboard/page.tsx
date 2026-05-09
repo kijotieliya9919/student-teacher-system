@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 
 export default async function TeacherDashboard() {
-  const { user } = await requireAuth('teacher')
+  await requireAuth('teacher')
 
   return (
     <div>

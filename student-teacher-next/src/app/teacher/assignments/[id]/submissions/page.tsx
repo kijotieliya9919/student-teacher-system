@@ -3,10 +3,10 @@ import GradeForm from './grade-form'
 
 export default async function AssignmentSubmissions({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { supabase, user } = await requireAuth('teacher')
+  const { svc, userId } = await requireAuth('teacher')
   const assignmentId = Number(id)
 
-  const { data: assignment } = await supabase
+  const { data: assignment } = await svc
     .from('assignments_new')
     .select('*, classes(name)')
     .eq('id', assignmentId)
