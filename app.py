@@ -638,7 +638,7 @@ def _build_submissions_list(items, uid, is_submissions=False):
             a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True) if s.get('assignment_id') else None
             if a and a.get('instructor_id') != uid:
                 continue
-            u = sb.table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
+            u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
             c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a and a.get('course_id') else None
             result.append({
                 'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
@@ -653,7 +653,7 @@ def _build_submissions_list(items, uid, is_submissions=False):
                 continue
             subs = sb.table('submissions').select(filters={'assignment_id': f'eq.{a["id"]}'})
             for s in (subs or []):
-                u = sb.table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
+                u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
                 c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a.get('course_id') else None
                 result.append({
                     'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
@@ -677,7 +677,7 @@ def teacher_view_submissions(assignment_id):
     submissions = sb.table('submissions').select(filters={'assignment_id': f'eq.{assignment_id}'})
     result = []
     for s in (submissions or []):
-        u = sb.table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
+        u = _service_table('users').select(filters={'id': f'eq.{s["student_id"]}'}, single=True) if s.get('student_id') else None
         result.append({
             'id': s['id'], 'student_name': u.get('full_name') if u else 'Unknown',
             'grade': s.get('grade'), 'feedback': s.get('feedback'),

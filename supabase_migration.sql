@@ -94,9 +94,10 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- 3. Create RLS policies (anon key can read/write based on role)
 -- Users: can read own data, admin can read all
-CREATE POLICY "users_select_own" ON users FOR SELECT USING (auth.uid()::text = id::text OR role = 'admin');
-CREATE POLICY "users_insert_admin" ON users FOR INSERT WITH CHECK (role = 'admin');
-CREATE POLICY "users_update_own" ON users FOR UPDATE USING (auth.uid()::text = id::text OR role = 'admin');
+CREATE POLICY "users_select_own" ON users FOR SELECT USING (auth.uid()::text = id::text OR EXISTS (SELECT 1 FROM users WHERE id::text = auth.uid()::text AND role = 'admin'));
+CREATE POLICY "users_insert_admin" ON users FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id::text = auth.uid()::text AND role = 'admin'));
+CREATE POLICY "users_insert_self" ON users FOR INSERT WITH CHECK (id::text = auth.uid()::text AND role = 'student');
+CREATE POLICY "users_update_own" ON users FOR UPDATE USING (auth.uid()::text = id::text OR EXISTS (SELECT 1 FROM users WHERE id::text = auth.uid()::text AND role = 'admin'));
 
 -- Programs: public read, admin write
 CREATE POLICY "programs_select_all" ON programs FOR SELECT USING (true);
