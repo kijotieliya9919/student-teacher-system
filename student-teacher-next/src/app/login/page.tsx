@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
@@ -10,7 +9,6 @@ export default function LoginPage() {
   const [role, setRole] = useState('student')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -46,11 +44,11 @@ export default function LoginPage() {
     }
 
     if (profile.must_change_password) {
-      router.push('/login?change_password=true')
+      window.location.href = '/login?change_password=true'
       return
     }
 
-    router.push(`/${role}/dashboard`)
+    window.location.href = `/${role}/dashboard`
   }
 
   return (

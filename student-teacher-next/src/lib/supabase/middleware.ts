@@ -21,33 +21,30 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
 
-  if (!user && pathname.startsWith('/student') || !user && pathname.startsWith('/teacher') || !user && pathname.startsWith('/admin')) {
+  if (!session && (
+    pathname.startsWith('/student') ||
+    pathname.startsWith('/teacher') ||
+    pathname.startsWith('/admin')
+  )) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user) {
+  if (session) {
     const { data: profile } = await supabase
       .from('users')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .single()
 
-    if (pathname.startsWith('/student') && profile?.role !== 'student') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-    if (pathname.startsWith('/teacher') && profile?.role !== 'teacher') {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-    if (pathname.startsWith('/admin') && profile?.role !== 'admin') {
+    if (
+      (pathname.startsWith('/student') && profile?.role !== 'student') ||
+      (pathname.startsWith('/teacher') && profile?.role !== 'teacher') ||
+      (pathname.startsWith('/admin') && profile?.role !== 'admin')) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)
