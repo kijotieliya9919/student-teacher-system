@@ -61,7 +61,7 @@ export default async function AssignmentSubmissions({ params }: { params: Promis
               </tr>
             </thead>
             <tbody>
-              {logsList.map(s => {
+              {logsList.map((s: any) => {
                 const studentId = s.user_id
                 const gradeInfo = gradeMap.get(studentId) || { grade: '', feedback: '' }
                 return (
