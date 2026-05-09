@@ -779,17 +779,17 @@ def submit_assignment(assignment_id):
     uid = request.user['auth_id']
     student_class = request.user.get('class_name', '') or ''
 
-    a = sb.table('assignments').select(filters={'id': f'eq.{assignment_id}'}, single=True)
+    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{assignment_id}'}, single=True)
     if not a:
         return jsonify({'detail': 'Assignment not found'}), 404
 
     cid = a.get('course_id')
-    enrolled = sb.table('enrollments').select(filters={
+    enrolled = sb.table('enrollments', request.token).select(filters={
         'student_id': f'eq.{uid}', 'course_id': f'eq.{cid}', 'status': 'eq.active'
     }, single=True)
 
     if not enrolled:
-        c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+        c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
         if not c or c.get('title') != student_class:
             return jsonify({'detail': 'Not enrolled in this course'}), 403
 
@@ -832,12 +832,12 @@ def submit_assignment(assignment_id):
 @role_required('student')
 def student_list_submissions():
     uid = request.user['auth_id']
-    submissions = sb.table('submissions').select(
+    submissions = sb.table('submissions', request.token).select(
         filters={'student_id': f'eq.{uid}'}, order='submitted_at.desc'
     )
     result = []
     for s in (submissions or []):
-        a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True) if s.get('assignment_id') else None
+        a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True) if s.get('assignment_id') else None
         result.append({
             'id': s['id'], 'assignment_title': a.get('title') if a else 'Unknown',
             'grade': s.get('grade'), 'feedback': s.get('feedback'),
@@ -855,14 +855,14 @@ def student_progress():
 
     total = 0
     if student_class:
-        all_a = sb.table('assignments').select()
+        all_a = sb.table('assignments', request.token).select()
         for a in (all_a or []):
             cid = a.get('course_id')
-            c = sb.table('courses').select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+            c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
             if c and c.get('title') == student_class:
                 total += 1
 
-    all_subs = sb.table('submissions').select(filters={'student_id': f'eq.{uid}'})
+    all_subs = sb.table('submissions', request.token).select(filters={'student_id': f'eq.{uid}'})
     submitted = len(all_subs or [])
     graded = 0
     for s in (all_subs or []):
@@ -883,7 +883,7 @@ def student_progress():
 @role_required('student')
 def student_gpa():
     uid = request.user['auth_id']
-    submissions = sb.table('submissions').select(filters={'student_id': f'eq.{uid}'})
+    submissions = sb.table('submissions', request.token).select(filters={'student_id': f'eq.{uid}'})
 
     grade_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
     total_points = 0
@@ -891,8 +891,8 @@ def student_gpa():
 
     for s in (submissions or []):
         if s.get('grade') in grade_points:
-            a = sb.table('assignments').select(filters={'id': f'eq.{s["assignment_id"]}'}, single=True) if s.get('assignment_id') else None
-            c = sb.table('courses').select(filters={'id': f'eq.{a["course_id"]}'}, single=True) if a and a.get('course_id') else None
+            a = sb.table('assignments', request.token).select(filters={'id': f'eq.{s.get("assignment_id")}'}, single=True) if s.get('assignment_id') else None
+            c = sb.table('courses', request.token).select(filters={'id': f'eq.{a.get("course_id")}'}, single=True) if a and a.get('course_id') else None
             credits = c.get('credits', 3) if c else 3
             total_points += grade_points[s['grade']] * credits
             total_credits += credits
@@ -909,7 +909,7 @@ def enroll_course():
     data = request.json
     course_id = data.get('course_id')
 
-    existing = sb.table('enrollments').select(filters={
+    existing = sb.table('enrollments', request.token).select(filters={
         'student_id': f'eq.{uid}', 'course_id': f'eq.{course_id}'
     }, single=True)
     if existing:
@@ -926,11 +926,11 @@ def enroll_course():
 @role_required('student')
 def get_notifications():
     uid = request.user['auth_id']
-    notifications = sb.table('notifications').select(
+    notifications = sb.table('notifications', request.token).select(
         filters={'user_id': f'eq.{uid}'}, order='created_at.desc'
     )
     return jsonify([{
-        'id': n['id'], 'subject': n['subject'], 'message': n.get('message'),
+        'id': n.get('id'), 'subject': n.get('subject'), 'message': n.get('message'),
         'is_read': bool(n.get('is_read', False)), 'created_at': n.get('created_at')
     } for n in (notifications or [])])
 
@@ -951,11 +951,11 @@ def mark_notification_read(notification_id):
 @login_required
 def notifications_redirect():
     uid = request.user['auth_id']
-    notifications = sb.table('notifications').select(
+    notifications = sb.table('notifications', request.token).select(
         filters={'user_id': f'eq.{uid}'}, order='created_at.desc'
     )
     return jsonify([{
-        'id': n['id'], 'subject': n['subject'], 'message': n.get('message'),
+        'id': n.get('id'), 'subject': n.get('subject'), 'message': n.get('message'),
         'is_read': bool(n.get('is_read', False)), 'created_at': n.get('created_at')
     } for n in (notifications or [])])
 
@@ -966,8 +966,8 @@ def notifications_redirect():
 def export_student_data():
     uid = request.user['auth_id']
     user = request.user
-    submissions = sb.table('submissions').select(filters={'student_id': f'eq.{uid}'})
-    notifications = sb.table('notifications').select(filters={'user_id': f'eq.{uid}'})
+    submissions = sb.table('submissions', request.token).select(filters={'student_id': f'eq.{uid}'})
+    notifications = sb.table('notifications', request.token).select(filters={'user_id': f'eq.{uid}'})
 
     return jsonify({
         'user_info': {
