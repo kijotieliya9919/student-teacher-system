@@ -1,0 +1,9 @@
+﻿{
+    "key":  "NEXT_PUBLIC_SUPABASE_URL",
+    "type":  "sensitive",
+    "target":  [
+                   "production",
+                   "preview"
+               ],
+    "value":  "https://jajfahyuglhbftphsktk.supabase.co"
+}
