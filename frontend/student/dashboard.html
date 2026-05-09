@@ -255,10 +255,6 @@
             }
         }
         
-        function logout() {
-            logout();
-        }
-        
         async function downloadAssignment(id, fileName) {
             const response = await fetch(`/api/student/download/${id}`, {
                 headers: {'Authorization': `Bearer ${token}`}
