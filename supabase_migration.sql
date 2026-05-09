@@ -3,7 +3,7 @@
 
 -- 1. Create tables
 CREATE TABLE IF NOT EXISTS users (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT UNIQUE NOT NULL,
   full_name TEXT NOT NULL,
   role TEXT DEFAULT 'student' CHECK (role IN ('admin', 'teacher', 'student')),
