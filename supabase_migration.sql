@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS courses (
 
 CREATE TABLE IF NOT EXISTS enrollments (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  student_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES users(id) ON DELETE CASCADE,
   course_id BIGINT REFERENCES courses(id) ON DELETE CASCADE,
   enrollment_date TIMESTAMPTZ DEFAULT NOW(),
   status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'completed')),
@@ -50,14 +50,14 @@ CREATE TABLE IF NOT EXISTS assignments (
   file_path TEXT NOT NULL,
   file_name TEXT NOT NULL,
   file_type TEXT,
-  instructor_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  instructor_id UUID REFERENCES users(id) ON DELETE CASCADE,
   deadline TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS submissions (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  student_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  student_id UUID REFERENCES users(id) ON DELETE CASCADE,
   assignment_id BIGINT REFERENCES assignments(id) ON DELETE CASCADE,
   file_path TEXT,
   grade TEXT,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 
 CREATE TABLE IF NOT EXISTS notifications (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   subject TEXT NOT NULL,
   message TEXT,
   is_read BOOLEAN DEFAULT FALSE,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   action TEXT NOT NULL,
   details TEXT,
   timestamp TIMESTAMPTZ DEFAULT NOW()
