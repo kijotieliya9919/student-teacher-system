@@ -714,10 +714,10 @@ def student_list_assignments():
     uid = request.user['auth_id']
     student_class = request.user.get('class_name', '') or ''
 
-    enrolled = sb.table('enrollments', request.token).select(filters={'student_id': f'eq.{uid}', 'status': 'eq.active'})
+    enrolled = sb.table('enrollments', _svc_key()).select(filters={'student_id': f'eq.{uid}', 'status': 'eq.active'})
     course_ids = [e.get('course_id') for e in (enrolled or [])]
 
-    all_assignments = sb.table('assignments', request.token).select(order='created_at.desc')
+    all_assignments = sb.table('assignments', _svc_key()).select(order='created_at.desc')
     now = datetime.now()
     active = []
 
@@ -726,7 +726,7 @@ def student_list_assignments():
         if cid in course_ids:
             pass
         elif student_class:
-            c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+            c = sb.table('courses', _svc_key()).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
             if not c or c.get('title') != student_class:
                 continue
         else:
@@ -741,7 +741,7 @@ def student_list_assignments():
             except (ValueError, AttributeError):
                 pass
 
-        c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+        c = sb.table('courses', _svc_key()).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
         active.append({
             'id': a.get('id'), 'title': a.get('title'), 'description': a.get('description'),
             'file_name': a.get('file_name'), 'file_type': a.get('file_type'),
@@ -756,7 +756,7 @@ def student_list_assignments():
 @login_required
 @role_required('student')
 def download_assignment(assignment_id):
-    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{assignment_id}'}, single=True)
+    a = sb.table('assignments', _svc_key()).select(filters={'id': f'eq.{assignment_id}'}, single=True)
     if not a:
         return jsonify({'detail': 'Assignment not found'}), 404
 
@@ -783,17 +783,17 @@ def submit_assignment(assignment_id):
     uid = request.user['auth_id']
     student_class = request.user.get('class_name', '') or ''
 
-    a = sb.table('assignments', request.token).select(filters={'id': f'eq.{assignment_id}'}, single=True)
+    a = sb.table('assignments', _svc_key()).select(filters={'id': f'eq.{assignment_id}'}, single=True)
     if not a:
         return jsonify({'detail': 'Assignment not found'}), 404
 
     cid = a.get('course_id')
-    enrolled = sb.table('enrollments', request.token).select(filters={
+    enrolled = sb.table('enrollments', _svc_key()).select(filters={
         'student_id': f'eq.{uid}', 'course_id': f'eq.{cid}', 'status': 'eq.active'
     }, single=True)
 
     if not enrolled:
-        c = sb.table('courses', request.token).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
+        c = sb.table('courses', _svc_key()).select(filters={'id': f'eq.{cid}'}, single=True) if cid else None
         if not c or c.get('title') != student_class:
             return jsonify({'detail': 'Not enrolled in this course'}), 403
 
