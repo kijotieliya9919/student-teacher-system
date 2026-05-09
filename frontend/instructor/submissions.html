@@ -46,6 +46,7 @@
             color: var(--forest-primary);
         }
     </style>
+    <script src="/js/supabase-init.js"></script>
 </head>
 <body>
     <div class="container-fluid">
@@ -109,8 +110,11 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script>
-        const token = localStorage.getItem('token');
-        if (!token) window.location.href = '/instructor/login.html';
+        let token = null;
+        (async () => {
+            const sb = await requireAuth();
+            token = (await sb.auth.getSession()).data.session?.access_token;
+        })();
 
         async function loadSubmissions() {
             const response = await fetch('/api/instructor/submissions', {
@@ -178,8 +182,8 @@
         }
 
         function logout() {
-            localStorage.clear();
-            window.location.href = '/';
+            logout();
+            return false;
         }
 
         loadSubmissions();

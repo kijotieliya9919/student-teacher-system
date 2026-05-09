@@ -57,6 +57,7 @@
             display: none;
         }
     </style>
+    <script src="/js/supabase-init.js"></script>
 </head>
 <body>
     <div class="login-card">
@@ -91,35 +92,28 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+            const errorAlert = document.getElementById('errorAlert') || document.getElementById('error');
+            if (errorAlert) {
+                errorAlert.style.display = 'none';
+                errorAlert.classList.add('d-none');
+            }
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorAlert = document.getElementById('errorAlert');
-            
             try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password, role: 'teacher'})
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('role', data.role);
-                    if (data.must_change_password) {
-                        window.location.href = '/admin/change-password.html';
-                    } else {
-                        window.location.href = '/instructor/dashboard.html';
-                    }
+                const result = await login(email, password, 'teacher');
+                if (result.must_change_password) {
+                    window.location.href = '/admin/change-password.html';
                 } else {
-                    errorAlert.textContent = data.detail || 'Login failed';
-                    errorAlert.style.display = 'block';
+                    window.location.href = '/instructor/dashboard.html';
                 }
-            } catch (error) {
-                errorAlert.textContent = 'Connection error. Please try again.';
-                errorAlert.style.display = 'block';
+            } catch (err) {
+                if (errorAlert) {
+                    errorAlert.textContent = err.message || 'Login failed';
+                    errorAlert.style.display = 'block';
+                    errorAlert.classList.remove('d-none');
+                } else {
+                    alert(err.message || 'Login failed');
+                }
             }
         });
     </script>
