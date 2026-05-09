@@ -146,14 +146,18 @@ def register():
     if not email or not full_name or not password:
         return jsonify({'detail': 'Missing required fields'}), 400
 
-    status, auth_data = sb.sign_up(email, password, {'role': role, 'full_name': full_name})
-    if status not in (200, 201):
-        msg = auth_data.get('error_description') or auth_data.get('msg') or 'Registration failed'
-        if 'already' in msg.lower():
-            return jsonify({'detail': 'Email already registered'}), 400
-        return jsonify({'detail': msg}), 400
+    status, auth_data = sb.admin_create_user(email, password, {'role': role, 'full_name': full_name})
+    if status in (200, 201):
+        auth_id = auth_data.get('id')
+    elif 'already exists' in str(auth_data).lower() or 'email_exists' in str(auth_data).lower():
+        auth_status, auth_data2 = sb.sign_in(email, password)
+        if auth_status != 200:
+            return jsonify({'detail': 'Email already registered. Please login.'}), 400
+        auth_id = auth_data2.get('user', {}).get('id')
+    else:
+        msg = str(auth_data)
+        return jsonify({'detail': f'Registration failed: {msg[:200]}'}), 400
 
-    auth_id = auth_data.get('user', {}).get('id')
     if not auth_id:
         return jsonify({'detail': 'Registration failed — no user ID returned'}), 500
 

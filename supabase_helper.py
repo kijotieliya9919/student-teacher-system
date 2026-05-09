@@ -12,10 +12,14 @@ HEADERS = {
     'Prefer': 'return=representation'
 }
 
+SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY', '')
+
 def _headers(token=None):
     h = dict(HEADERS)
     if token:
         h['Authorization'] = f'Bearer {token}'
+        if token == SERVICE_KEY and SERVICE_KEY:
+            h['apikey'] = SERVICE_KEY
     return h
 
 # ─── Auth ────────────────────────────────────────────────────────────
