@@ -99,7 +99,7 @@ function addFile(file: File): Promise<string> {
 
 export const store = {
   auth: {
-    login(email: string, password: string) {
+    login(email: string, password: string): { ok: true; user: User } | { ok: false; error: string } {
       const users = getArr<User>(KEYS.USERS)
       const user = users.find(u => u.email === email && u.password === password)
       if (!user) return { ok: false, error: 'Invalid email or password' }
@@ -114,7 +114,7 @@ export const store = {
       const raw = localStorage.getItem(KEYS.SESSION)
       return raw ? JSON.parse(raw) : null
     },
-    register(data: { email: string; password: string; fullName: string; role: 'student' | 'teacher'; classId?: number }) {
+    register(data: { email: string; password: string; fullName: string; role: 'student' | 'teacher'; classId?: number }): { ok: true; user: User } | { ok: false; error: string } {
       const users = getArr<User>(KEYS.USERS)
       if (users.find(u => u.email === data.email)) return { ok: false, error: 'Email already registered' }
       const user: User = { id: genId(), ...data }

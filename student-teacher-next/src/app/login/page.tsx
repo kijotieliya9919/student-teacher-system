@@ -20,7 +20,7 @@ export default function LoginPage() {
     setLoading(true)
 
     const result = store.auth.login(email, password)
-    if (!result.ok) {
+    if (!result.ok || !result.user) {
       setError(result.error || 'Login failed')
       setLoading(false)
       return
