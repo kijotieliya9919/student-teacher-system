@@ -44,16 +44,6 @@ export async function updateSession(request: NextRequest) {
     if (path.startsWith('/student') && role !== 'student') return NextResponse.redirect(loginUrl)
     if (path.startsWith('/teacher') && role !== 'teacher') return NextResponse.redirect(loginUrl)
     if (path.startsWith('/admin') && role !== 'admin') return NextResponse.redirect(loginUrl)
-
-    const requestHeaders = new Headers(request.headers)
-    requestHeaders.set('x-user-id', user.id)
-    requestHeaders.set('x-user-role', role)
-
-    const res = NextResponse.next({ request: { headers: requestHeaders } })
-    for (const c of supabaseResponse.cookies.getAll()) {
-      res.cookies.set(c.name, c.value, c)
-    }
-    return res
   }
 
   return supabaseResponse

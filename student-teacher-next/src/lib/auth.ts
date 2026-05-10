@@ -1,26 +1,26 @@
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { createServiceClient } from './supabase/server'
-
-export async function getUserFromHeaders() {
-  const h = await headers()
-  const userId = h.get('x-user-id')
-  const role = h.get('x-user-role')
-  return { userId, role }
-}
+import { createClient, createServiceClient } from './supabase/server'
 
 export async function requireAuth(requiredRole?: 'student' | 'teacher' | 'admin') {
-  const { userId, role } = await getUserFromHeaders()
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
 
-  if (!userId) redirect('/login')
-  if (requiredRole && role !== requiredRole) redirect('/login')
+  if (error || !user) {
+    redirect('/login')
+  }
 
   const svc = createServiceClient()
   const { data: profile } = await svc
     .from('users')
     .select('*')
-    .eq('id', userId)
+    .eq('id', user!.id)
     .single()
 
-  return { userId, role, profile, svc }
+  const role = profile?.role || ''
+
+  if (requiredRole && role !== requiredRole) {
+    redirect('/login')
+  }
+
+  return { userId: user!.id, role, profile, svc }
 }
