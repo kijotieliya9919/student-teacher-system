@@ -2,136 +2,101 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { store, seedIfEmpty } from '@/lib/store'
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [role, setRole] = useState('student')
+  const [role, setRole] = useState<'student' | 'teacher'>('student')
   const [classes, setClasses] = useState<{ id: number; name: string; code: string }[]>([])
   const [classId, setClassId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
-    supabase.from('classes').select('id, name, code').order('name').then(({ data }) => {
-      if (data) setClasses(data)
-    })
-  }, [supabase])
+    seedIfEmpty()
+    setClasses(store.classes.all())
+  }, [])
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setSuccess('')
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
+    if (password !== confirmPassword) { setError('Passwords do not match'); return }
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return }
 
     setLoading(true)
+    const result = store.auth.register({ email, password, fullName, role, classId: classId ? Number(classId) : undefined })
 
-    const res = await fetch('/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName, role, classId: classId || null }),
-    })
-
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error || 'Registration failed')
+    if (!result.ok) {
+      setError(result.error || 'Registration failed')
       setLoading(false)
       return
     }
 
-    setSuccess('Account created successfully! Redirecting to login...')
-    setTimeout(() => router.push('/login'), 2000)
+    setSuccess('Account created! Redirecting to login...')
+    setTimeout(() => router.push('/login'), 1500)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-800 to-green-600">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-green-800 mb-6">Create Account</h2>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: 20 }}>
+      {Array.from({ length: 15 }).map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute', width: Math.random() * 5 + 2 + 'px', height: Math.random() * 5 + 2 + 'px',
+          background: 'rgba(201,151,60,' + (Math.random() * 0.3 + 0.1) + ')', borderRadius: '50%',
+          left: Math.random() * 100 + '%', top: Math.random() * 100 + '%',
+          animation: `float ${Math.random() * 6 + 4}s ease-in-out infinite`,
+          animationDelay: Math.random() * 4 + 's',
+        }} />
+      ))}
 
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{error}</div>}
-        {success && <div className="bg-green-50 text-green-700 p-3 rounded mb-4 text-sm">{success}</div>}
+      <div className="card-3d" style={{ width: '100%', maxWidth: 460, padding: 40, animation: 'fadeInUp 0.5s ease' }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <h2 style={{ color: '#fff', fontSize: 24, fontWeight: 700, margin: 0 }}>Create Account</h2>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginTop: 6 }}>Join the Forestry Training Institute</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-          </div>
+        {error && <div style={{ background: 'rgba(153,27,27,0.3)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 10, padding: '12px 16px', color: '#f87171', fontSize: 14, marginBottom: 20 }}>{error}</div>}
+        {success && <div style={{ background: 'rgba(20,83,45,0.3)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: 10, padding: '12px 16px', color: '#4ade80', fontSize: 14, marginBottom: 20 }}>{success}</div>}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-          </div>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} required placeholder="Full Name" className="input-glass" />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Email address" className="input-glass" />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Password (min 6 chars)" className="input-glass" />
+          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required placeholder="Confirm Password" className="input-glass" />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-            <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">I want to register as</label>
-            <select value={role} onChange={e => { setRole(e.target.value); setClassId('') }}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500">
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-            </select>
-          </div>
+          <select value={role} onChange={e => { setRole(e.target.value as 'student' | 'teacher'); setClassId('') }} className="input-glass">
+            <option value="student">Register as Student</option>
+            <option value="teacher">Register as Teacher</option>
+          </select>
 
           {role === 'student' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Class</label>
-              <select value={classId} onChange={e => setClassId(e.target.value)} required
-                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500">
-                <option value="">-- Select a class --</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.code || 'No code'})</option>
-                ))}
-              </select>
-              {classes.length === 0 && (
-                <p className="text-sm text-yellow-600 mt-1">No classes available yet. Contact admin.</p>
-              )}
-            </div>
+            <select value={classId} onChange={e => setClassId(e.target.value)} required className="input-glass">
+              <option value="">-- Select your class --</option>
+              {classes.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+              {classes.length === 0 && <option disabled>No classes available</option>}
+            </select>
           )}
 
           {role === 'teacher' && (
-            <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-              Teachers can register now. An administrator will assign you to a class later.
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', padding: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }}>
+              An administrator will assign you to a class later.
             </p>
           )}
 
-          <button type="submit" disabled={loading}
-            className="w-full py-2 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 disabled:opacity-50 transition">
-            {loading ? 'Creating account...' : 'Create Account'}
+          <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 8, padding: '14px 0', width: '100%', fontSize: 16 }}>
+            {loading ? 'Creating...' : 'Create Account'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14, marginTop: 20 }}>
           Already have an account?{' '}
-          <a href="/login" className="text-green-600 hover:underline">Login here</a>
+          <a href="/login" style={{ color: '#c9973c', textDecoration: 'none', fontWeight: 600 }}>Login</a>
         </p>
       </div>
     </div>
