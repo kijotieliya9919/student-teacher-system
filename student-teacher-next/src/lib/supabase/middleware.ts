@@ -44,6 +44,11 @@ export async function updateSession(request: NextRequest) {
     if (path.startsWith('/student') && role !== 'student') return NextResponse.redirect(loginUrl)
     if (path.startsWith('/teacher') && role !== 'teacher') return NextResponse.redirect(loginUrl)
     if (path.startsWith('/admin') && role !== 'admin') return NextResponse.redirect(loginUrl)
+
+    request.cookies.set('__uid', user.id)
+    request.cookies.set('__role', role)
+    supabaseResponse.cookies.set('__uid', user.id, { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 3600 })
+    supabaseResponse.cookies.set('__role', role, { path: '/', httpOnly: true, sameSite: 'lax', maxAge: 3600 })
   }
 
   return supabaseResponse
