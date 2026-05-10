@@ -1,14 +1,18 @@
 import Link from 'next/link'
-import { getUserFromHeaders } from '@/lib/auth'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await getUserFromHeaders()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
   const svc = createServiceClient()
   const { data: profile } = await svc
     .from('users')
     .select('full_name')
-    .eq('id', userId)
+    .eq('id', user.id)
     .single()
 
   return (
