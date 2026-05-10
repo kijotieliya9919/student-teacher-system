@@ -20,6 +20,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
 
   const links = [
     { href: '/teacher/dashboard', label: 'Dashboard' },
+    { href: '/teacher/assignments', label: 'All Assignments' },
     { href: '/teacher/assignments/new', label: 'Upload Assignment' },
   ]
 

@@ -41,7 +41,7 @@ export default function AdminUsers() {
         role: form.role === 'admin' ? 'student' : (form.role as 'student' | 'teacher'),
         classId: form.classId ? Number(form.classId) : undefined,
       })
-      if (!result.ok) { alert(result.error); return }
+      if (!result.ok || !result.user) { alert(result.error || 'Failed'); return }
       if (form.role === 'admin') {
         store.users.update(result.user.id, { role: 'admin' })
       }
