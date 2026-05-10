@@ -20,11 +20,8 @@ export default function LoginPage() {
     setLoading(true)
 
     const result = store.auth.login(email, password)
-    if (!result.ok || !result.user) {
-      setError(result.error || 'Login failed')
-      setLoading(false)
-      return
-    }
+    if (!result.ok) { setError(result.error); setLoading(false); return }
+    if (!result.user) { setError('Login failed'); setLoading(false); return }
 
     if (result.user.role !== role) {
       setError('This account is not registered as a ' + role)
