@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { store, seedIfEmpty } from '@/lib/store'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -9,85 +10,89 @@ export default function LoginPage() {
   const [role, setRole] = useState('student')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const supabase = createClient()
+  const router = useRouter()
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => { seedIfEmpty() }, [])
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-    if (authError || !authData.user) {
-      setError('Invalid email or password')
+    const result = store.auth.login(email, password)
+    if (!result.ok) {
+      setError(result.error || 'Login failed')
       setLoading(false)
       return
     }
 
-    const { data: profile } = await supabase
-      .from('users')
-      .select('role, must_change_password')
-      .eq('id', authData.user.id)
-      .single()
-
-    if (!profile) {
-      await supabase.auth.signOut()
-      setError('User account not set up. Contact admin.')
+    if (result.user.role !== role) {
+      setError('This account is not registered as a ' + role)
       setLoading(false)
       return
     }
 
-    if (profile.role !== role) {
-      await supabase.auth.signOut()
-      setError(`This account is not registered as a ${role}. Please use the correct login page.`)
-      setLoading(false)
-      return
-    }
-
-    if (profile.must_change_password) {
-      window.location.href = '/login?change_password=true'
-      return
-    }
-
-    window.location.href = `/${role}/dashboard`
+    router.push('/' + result.user.role + '/dashboard')
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-800 to-green-600">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center text-green-800 mb-6">Login</h2>
-        {error && <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', padding: 20 }}>
+      {Array.from({ length: 15 }).map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute', width: Math.random() * 5 + 2 + 'px', height: Math.random() * 5 + 2 + 'px',
+          background: 'rgba(201,151,60,' + (Math.random() * 0.3 + 0.1) + ')', borderRadius: '50%',
+          left: Math.random() * 100 + '%', top: Math.random() * 100 + '%',
+          animation: `float ${Math.random() * 6 + 4}s ease-in-out infinite`,
+          animationDelay: Math.random() * 4 + 's',
+        }} />
+      ))}
+
+      <div className="card-3d" style={{ width: '100%', maxWidth: 420, padding: 40, animation: 'fadeInUp 0.5s ease' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: 'linear-gradient(135deg, #c9973c, #eab308)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 28, color: '#0a3622', margin: '0 auto 12px' }}>FTI</div>
+          <h2 style={{ color: '#fff', fontSize: 24, fontWeight: 700, margin: 0 }}>Welcome Back</h2>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, marginTop: 6 }}>Sign in to your account</p>
+        </div>
+
+        {error && <div style={{ background: 'rgba(153,27,27,0.3)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: 10, padding: '12px 16px', color: '#f87171', fontSize: 14, marginBottom: 20 }}>{error}</div>}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">I am a</label>
-            <select value={role} onChange={e => setRole(e.target.value)}
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            <label style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, fontWeight: 600 }}>I am a</label>
+            <select value={role} onChange={e => setRole(e.target.value)} className="input-glass">
               <option value="student">Student</option>
               <option value="teacher">Teacher</option>
               <option value="admin">Administrator</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+            <label style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, fontWeight: 600 }}>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="your@email.com" className="input-glass" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+            <label style={{ display: 'block', fontSize: 13, color: 'rgba(255,255,255,0.6)', marginBottom: 6, fontWeight: 600 }}>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" className="input-glass" />
           </div>
-          <button type="submit" disabled={loading}
-            className="w-full py-2 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 disabled:opacity-50 transition">
-            {loading ? 'Logging in...' : 'Login'}
+          <button type="submit" disabled={loading} className="btn-primary" style={{ marginTop: 8, padding: '14px 0', width: '100%', fontSize: 16 }}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Don't have an account? <a href="/register" className="text-green-600 hover:underline font-medium">Create one</a>
+
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 14, marginTop: 24 }}>
+          Don&apos;t have an account?{' '}
+          <a href="/register" style={{ color: '#c9973c', textDecoration: 'none', fontWeight: 600 }}>Create one</a>
         </p>
-        <p className="text-center text-sm text-gray-500 mt-2">
-          <a href="/" className="text-green-600 hover:underline">Back to Home</a>
+        <p style={{ textAlign: 'center', marginTop: 8 }}>
+          <a href="/" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13, textDecoration: 'none' }}>Back to Home</a>
         </p>
+
+        <div style={{ marginTop: 24, padding: '16px', background: 'rgba(255,255,255,0.04)', borderRadius: 10, fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+          <strong style={{ color: 'rgba(255,255,255,0.5)' }}>Test accounts:</strong><br />
+          admin@forestry.edu / admin123<br />
+          teacher@forestry.edu / teacher123<br />
+          student@forestry.edu / student123
+        </div>
       </div>
     </div>
-  );
+  )
 }
